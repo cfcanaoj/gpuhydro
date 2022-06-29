@@ -26,6 +26,11 @@
 
       real(8),parameter::gam=5.0d0/3.0d0
 
+!$acc declare create(dt)
+!$acc declare create(x1a,x1b)
+!$acc declare create(x2a,x2b)
+!$acc declare create(x3a,x3b)
+      
       end module modbasic
       
       module fluxmod
@@ -43,7 +48,8 @@
       integer,parameter:: mden=1,mrv1=2,mrv2=3,mrv3=4,meto=5  &
      &                          ,mrvu=muvu,mrvv=muvv,mrvw=muvw
       real(8),dimension(mflx,in,jn,kn):: nflux1,nflux2,nflux3
-
+!$acc declare create(svc,nflux1,nflux2,nflux3)
+      
       end module fluxmod
 
       program main
@@ -146,6 +152,8 @@
       enddo
       enddo
       
+!$acc update device (d,v1,p,v2,v3)
+!$acc update device (ei,cs)
 
       call BoundaryCondition
 
@@ -157,6 +165,7 @@
       implicit none
       integer::i,j,k
 
+!$acc kernels      
       k=ks
       do j=1,jn-1
       do i=1,mgn
@@ -200,7 +209,7 @@
           v3(i,je+j,k) = v3(i,js+j-1,k)
       enddo
       enddo
-
+!$acc end kernels
 
       return
       end subroutine BoundaryCondition
@@ -209,6 +218,8 @@
       use modbasic
       implicit none
       integer::i,j,k
+!$acc kernels      
+!$acc loop independent
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -223,6 +234,7 @@
       enddo
       enddo
       enddo
+!$acc end kernels
       
       return
       end subroutine Consvvariable
@@ -231,6 +243,9 @@
       use modbasic
       implicit none
       integer::i,j,k
+      
+!$acc kernels      
+!$acc loop independent
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -249,7 +264,7 @@
       enddo
       enddo
       enddo
-
+!$acc end kernels
       return
       end subroutine PrimVariable
 
@@ -263,6 +278,7 @@
       real(8)::dtmin
       integer::i,j,k
       dtmin=1.0d90
+!$acc kernels    
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -274,6 +290,7 @@
       enddo
       enddo
       enddo
+!$acc end kernels
 
       dt = 0.05d0 * dtmin
 
@@ -286,7 +303,9 @@
       implicit none
       integer::i,j,k
 
+!$acc kernels
       k=ks
+!$acc loop independent
       do j=1,jn-1
       do i=1,in-1
          svc(nden,i,j,k) =  d(i,j,k)
@@ -297,11 +316,13 @@
          svc(npre,i,j,k) = ei(i,j,k)*(gam-1.0d0)
       enddo
       enddo
-
+!$acc end kernels
+      
       return
       end subroutine StateVevtor
 
       subroutine minmod(a,b,d)
+!$acc routine seq
       use fluxmod, only : nhyd
       implicit none
       real(8),dimension(nhyd),intent(in)::a,b
@@ -318,6 +339,7 @@
 
 
       subroutine vanLeer(dvp,dvm,dv)
+!$acc routine seq
       use fluxmod, only : nhyd
       implicit none
       real(8),dimension(nhyd),intent(in)::dvp,dvm
@@ -336,9 +358,8 @@
       return
       end subroutine vanLeer
 
-
-
       subroutine MClimiter(a,b,c,d)
+!$acc routine seq
       use fluxmod, only : nhyd
       implicit none
       real(8),dimension(nhyd),intent(in)::a,b,c
@@ -365,7 +386,9 @@
       real(8),dimension(2*mflx+madd):: leftst,rigtst
       real(8),dimension(mflx):: nflux
 
+!$acc kernels
       k=ks
+!$acc loop independent
       do j=js,je
       do i=is-1,ie+1
          dsvp(:) = (svc(:,i+1,j,k) -svc(:,i,j,k)                 )
@@ -377,7 +400,10 @@
          rigtpr(:,i  ,j,k) = svc(:,i,j,k) - 0.5d0*dsv(:)
       enddo
       enddo
+!$acc end kernels
 
+!$acc kernels
+!$acc loop independent
       do j=js,je
       do i=is,ie+1
          leftco(mudn,i,j,k)=leftpr(nden,i,j,k) ! rho
@@ -437,13 +463,15 @@
 
       enddo
       enddo
+!$acc end kernels
 
+!$acc kernels
+!$acc loop independent
       do j=js,je
       do i=is,ie+1
          leftst(:)=leftco(:,i,j,k)
          rigtst(:)=rigtco(:,i,j,k)
-!         call HLLE(leftst,rigtst,nflux)
-         call HLLC(leftst,rigtst,nflux)
+         call HLLE(leftst,rigtst,nflux)
          nflux1(mden,i,j,k)=nflux(mden)
          nflux1(mrv1,i,j,k)=nflux(mrvu)
          nflux1(mrv2,i,j,k)=nflux(mrvv)
@@ -451,6 +479,7 @@
          nflux1(meto,i,j,k)=nflux(meto)
       enddo
       enddo
+!$acc end kernels
 
       return
       end subroutine Numericalflux1
@@ -466,7 +495,9 @@
       real(8),dimension(2*mflx+madd):: leftst,rigtst
       real(8),dimension(mflx):: nflux
 
+!$acc kernels
       k=ks
+!$acc loop independent private (dsv,dsvp,dsvm)
       do i=is,ie
       do j=js-1,je+1
          dsvp(:) = (svc(:,i,j+1,k) -svc(:,i,j,k)                 )
@@ -482,7 +513,11 @@
 
        enddo
        enddo  
-
+!$acc end kernels
+       
+!$acc kernels
+      k=ks
+!$acc loop independent
       do i=is,ie
       do j=js,je+1
          leftco(mudn,i,j,k)=leftpr(nden,i,j,k)
@@ -542,13 +577,16 @@
 
       enddo
       enddo
+!$acc end kernels
 
+!$acc kernels
+      k=ks
+!$acc loop independent
       do i=is,ie
       do j=js,je+1
          leftst(:)=leftco(:,i,j,k)
          rigtst(:)=rigtco(:,i,j,k)
-!         call HLLE(leftst,rigtst,nflux)
-         call HLLC(leftst,rigtst,nflux)
+         call HLLE(leftst,rigtst,nflux)
          nflux2(mden,i,j,k)=nflux(mden)
          nflux2(mrv1,i,j,k)=nflux(mrvw)
          nflux2(mrv2,i,j,k)=nflux(mrvu) ! mrv2=3, mrvu=2
@@ -556,11 +594,13 @@
          nflux2(meto,i,j,k)=nflux(meto)
       enddo
       enddo
+!$acc end kernels
 
       return
       end subroutine Numericalflux2
 
       subroutine HLLE(leftst,rigtst,nflux)
+!$acc routine seq
       use fluxmod
       implicit none
       real(8),dimension(2*mflx+madd),intent(in)::leftst,rigtst
@@ -589,205 +629,14 @@
       return
       end subroutine HLLE
 
-      subroutine HLLC(leftst,rigtst,nflux)
-!=====================================================================
-!
-! HLLC Scheme
-!
-! Purpose
-! Calculation of Numerical Flux by HLLC method
-!
-! Reference
-!  Toro EF, Spruce M, Speares W. (1992,1994)
-!
-! Input
-! Output
-!=====================================================================
-      use fluxmod, only: mflx,madd &
-     &                 , mudn,muvu,muvv,muvw,muet &
-     &                 , mfdn,mfvu,mfvv,mfvw,mfet &
-     &                 , mcsp,mvel,mpre &
-     &                 , mden,mrvu,mrvv,mrvw,meto
-
-      implicit none
-      real(8),dimension(2*mflx+madd),intent(in)::leftst,rigtst
-      real(8),dimension(mflx),intent(out)::nflux
-
-!----- U -----
-! qql :: left state
-! qqr :: right state
-      real(8) :: rol,vxl,vyl,vzl,ptl,eel
-      real(8) :: ror,vxr,vyr,vzr,ptr,eer
-      real(8) :: rxl,ryl,rzl
-      real(8) :: rxr,ryr,rzr
-      real(8) :: ptst
-
-!----- U* ----
-! qqlst ::  left state
-! qqrst :: right state
-      real(8) :: rolst,vxlst,vylst,vzlst,eelst
-      real(8) :: rorst,vxrst,vyrst,vzrst,eerst
-      real(8) :: rxlst,rylst,rzlst
-      real(8) :: rxrst,ryrst,rzrst
-
-!----- flux ---
-! fqql ::  left physical flux
-! fqqr :: right physical flux
-      real(8) :: frol,frxl,fryl,frzl,feel
-      real(8) :: fror,frxr,fryr,frzr,feer
-
-!----- wave speed ---
-! sl ::  left-going fastest signal velocity
-! sr :: right-going fastest signal velocity
-! sm :: contact discontinuity velocity
-! slst ::  left-going alfven velocity
-! srst :: right-going alfven velocity
-      real(8) :: sm,sl,sr
-
-! cfl :: left-state Fast wave velocity
-! cfr :: right-sate Fast wave velocity
-      real(8) :: cfl,cfr
-
-!--------------------
-! temporary variables
-      real(8) :: sdl,sdr,sdml,sdmr,isdml,isdmr,rosdl,rosdr
-      real(8) :: temp
-  
-! no if
-      real(8) :: sign1,maxs1,mins1
-      real(8) :: msl,msr
-
-!----- Step 0. ----------------------------------------------------------|
-
-!---- Left state
-        
-        rol = leftst(mudn)
-        eel = leftst(muet)
-        rxl = leftst(muvu)
-        ryl = leftst(muvv)
-        rzl = leftst(muvw)
-        vxl = leftst(muvu)/leftst(mudn)
-        vyl = leftst(muvv)/leftst(mudn)
-        vzl = leftst(muvw)/leftst(mudn)
-        ptl = leftst(mpre)
-
-!---- Right state
-        
-        ror = rigtst(mudn)
-        eer = rigtst(muet)
-        rxr = rigtst(muvu)
-        ryr = rigtst(muvv)
-        rzr = rigtst(muvw)
-        vxr = rigtst(muvu)/rigtst(mudn)
-        vyr = rigtst(muvv)/rigtst(mudn)
-        vzr = rigtst(muvw)/rigtst(mudn)
-        ptr = rigtst(mpre)
-!----- Step 1. ----------------------------------------------------------|
-! Compute wave left & right wave speed
-!
-         
-        cfl = leftst(mcsp)
-        cfr = rigtst(mcsp)
-
-        sl = min(vxl,vxr)-max(cfl,cfr) ! note sl is negative
-        sr = max(vxl,vxr)+max(cfl,cfr)
-!----- Step 2. ----------------------------------------------------------|
-! compute L/R fluxs
-!
-! Left value
-        frol = leftst(mfdn)
-        feel = leftst(mfet)
-        frxl = leftst(mfvu)
-        fryl = leftst(mfvv)
-        frzl = leftst(mfvw)
-
-! Right value
-! Left value
-        fror = rigtst(mfdn)
-        feer = rigtst(mfet)
-        frxr = rigtst(mfvu)
-        fryr = rigtst(mfvv) 
-        frzr = rigtst(mfvw)
-
-!----- Step 4. ----------------------------------------------------------|
-! compute middle and alfven wave
-!
-        sdl = sl - vxl
-        sdr = sr - vxr
-        rosdl = rol*sdl
-        rosdr = ror*sdr
-
-        temp = 1.0d0/(rosdr - rosdl)
-! Eq. 45
-        sm = (rosdr*vxr - rosdl*vxl - ptr + ptl)*temp
-           
-        sdml = sl - sm; isdml = 1.0d0/sdml
-        sdmr = sr - sm; isdmr = 1.0d0/sdmr
-        
-!----- Step 5. ----------------------------------------------------------|
-! compute intermediate states
-!
-! Eq. 49
-        ptst = (rosdr*ptl-rosdl*ptr+rosdl*rosdr*(vxr-vxl))*temp
-
-!----- Step 5A. ----------------------------------------------------------|
-! compute Ul*
-!
-
-        rolst = rol*sdl   *isdml
-        vxlst = sm
-        rxlst = rolst*vxlst
-           
-        vylst = vyl
-        rylst = rolst*vylst
-        vzlst = vzl
-        rzlst = rolst*vzlst
-
-        eelst =(sdl*eel - ptl*vxl + ptst*sm  )*isdml
-
-!----- Step 5B. ----------------------------------------------------------|
-! compute Ur*
-!
-
-        rorst   = rosdr   *isdmr
-        vxrst = sm
-        rxrst = rorst*vxrst
-        vyrst = vyr
-        ryrst = rorst*vyrst
-        vzrst = vzr
-        rzrst = rorst*vzrst
-           
-        eerst = (sdr*eer - ptr*vxr  + ptst*sm  )*isdmr
-              
-!----- Step 6. ----------------------------------------------------------|
-! compute flux
-        sign1 = sign(1.0d0,sm)    ! 1 for sm>0, -1 for sm<0
-        maxs1 =  max(0.0d0,sign1) ! 1 sm>0, 0 for sm<0
-        mins1 = -min(0.0d0,sign1) ! 0 sm>0,-1 for sm<0
-
-        msl   = min(sl  ,0.0d0)   ! 0 for sl > 0, sl for sl < 0
-        msr   = max(sr  ,0.0d0)   ! S_R > 0
-
-        nflux(mden) = (frol+msl*(rolst-rol))*maxs1  &
-     &               +(fror+msr*(rorst-ror))*mins1
-        nflux(meto) = (feel+msl*(eelst-eel))*maxs1  &
-     &               +(feer+msr*(eerst-eer))*mins1
-        nflux(mrvu) = (frxl+msl*(rxlst-rxl))*maxs1  &
-     &               +(frxr+msr*(rxrst-rxr))*mins1
-        nflux(mrvv) = (fryl+msl*(rylst-ryl))*maxs1  &
-     &               +(fryr+msr*(ryrst-ryr))*mins1
-        nflux(mrvw) = (frzl+msl*(rzlst-rzl))*maxs1  &
-     &               +(frzr+msr*(rzrst-rzr))*mins1
-
-      return
-      end subroutine HLLC
-
       subroutine UpdateConsv
       use modbasic
       use fluxmod
       implicit none
       integer::i,j,k
 
+!$acc kernels
+!$acc loop independent
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -834,6 +683,7 @@
       enddo
       enddo
       enddo
+!$acc end kernels
 
       return
       end subroutine UpdateConsv
@@ -852,7 +702,7 @@
       integer,parameter::unitout=13
 
       if(time .lt. tout+dtout) return
-
+!$acc update host (d,v1,v2,v3,p)
       write(filename,'(a2,i5.5,a4)')"Sc",nout,".xss"
 
       filename = trim(dirname)//filename

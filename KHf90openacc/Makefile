@@ -7,11 +7,12 @@ all: ${exe}
 .PHONY: all clean allclean
 
 fc= nvfortran
-fopt=-g -traceback -O2
+foptopenacc = -Minfo=accel -acc
+fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
 ${exe}: main.f90
-	${fc} ${fopt} $< -o ${exe}
+	${fc} ${fopt} ${foptopenacc} $< -o ${exe}
 
 #################
 # clean up
