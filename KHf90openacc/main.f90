@@ -26,6 +26,11 @@
 
       real(8),parameter::gam=5.0d0/3.0d0
 
+!$acc declare create(ngrid,mgn)
+!$acc declare create(in,jn,kn)
+!$acc declare create(is,js,ks)
+!$acc declare create(ie,je,ke)
+      
 !$acc declare create(dt)
 !$acc declare create(x1a,x1b)
 !$acc declare create(x2a,x2b)
@@ -159,8 +164,8 @@
       enddo
       enddo
       
-!$acc update device (d,v1,p,v2,v3)
-!$acc update device (ei,cs)
+!$acc update device (d,v1,v2,v3)
+!$acc update device (p,ei,cs)
 
       call BoundaryCondition
 
@@ -297,10 +302,11 @@
       enddo
       enddo
       enddo
-!$acc end kernels
-
+   
       dt = 0.05d0 * dtmin
-
+!$acc end kernels
+!$acc update host (dt)
+      
       return
       end subroutine TimestepControl
 
@@ -707,11 +713,16 @@
       integer::nout
       data nout / 1 /
       integer,parameter::unitout=13
-
+      logical,save::is_inited
+      data is_inited / .false. /
+      
+      if(.not. is_inited)then
+         call makedirs(dirname)
+         is_inited = .true.
+      endif
       if(time .lt. tout+dtout) return
 !$acc update host (d,v1,v2,v3,p)
       write(filename,'(a2,i5.5,a4)')"Sc",nout,".xss"
-      call makedirs(dirname)
       filename = trim(dirname)//filename
       open(unitout,file=filename,status='replace',form='formatted') 
 
