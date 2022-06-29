@@ -17,7 +17,7 @@
 Let us move to analysis server.
 
     ssh an10@cfca.nao.ac.jp
-    cd /gwork0/<username>/ gpuhydro/KHf90openaccc
+    cd /gwork0/<username>/gpuhydro/KHf90openaccc
     module load gnuplot
     gnuplot dn2dx.plt
     display figures/dnx00100.png
