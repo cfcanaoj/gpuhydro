@@ -31,6 +31,10 @@
 !$acc declare create(x2a,x2b)
 !$acc declare create(x3a,x3b)
       
+!$acc declare create(d,et,mv1,mv2,mv3)
+!$acc declare create(p,ei,v1,v2,v3,cs)
+      
+!$acc declare create(gam)
       end module modbasic
       
       module fluxmod
@@ -97,6 +101,9 @@
       do j=1,jn-1
          x2b(j) = 0.5d0*(x2a(j+1)+x2a(j))
       enddo
+      
+!$acc update device (x1a,x1b)
+!$acc update device (x2a,x2b)
 
       return
       end subroutine GenerateGrid
@@ -692,7 +699,7 @@
       use modbasic
       implicit none
       integer::i,j,k
-      character(20),parameter::dirname="meddata/"
+      character(20),parameter::dirname="snapshots/"
       character(40)::filename
       real(8),save::tout
       data tout / 0.0d0 / 
@@ -704,7 +711,7 @@
       if(time .lt. tout+dtout) return
 !$acc update host (d,v1,v2,v3,p)
       write(filename,'(a2,i5.5,a4)')"Sc",nout,".xss"
-
+      call makedirs(dirname)
       filename = trim(dirname)//filename
       open(unitout,file=filename,status='replace',form='formatted') 
 
@@ -725,3 +732,11 @@
 
       return
       end subroutine Output
+
+      subroutine makedirs(outdir)
+        character(len=*), intent(in) :: outdir
+        character(len=256) command
+        write(command, *) 'if [ ! -d ', trim(outdir), ' ]; then mkdir -p ', trim(outdir), '; fi'
+        write(*, *) trim(command)
+        call system(command)
+      end subroutine makedirs
