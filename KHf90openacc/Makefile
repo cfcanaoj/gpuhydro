@@ -1,44 +1,16 @@
-dird := meddata
-dirf := figures
-dirm := movies
+dird := snapshots
 
-MOVIES := ${dirm}/anidnx.mp4
+exe=kh.x
 
-XSS= ${dird}/Sc00001.xss $(shell ls ${dird}/Sc*.xss)
-DNPNG=$(patsubst ${dird}/Sc%.xss,${dirf}/dnx%.png,$(XSS))
-
-exe=simplehyd.x
-
-all: ${exe} ${MOVIES}
+all: ${exe}
 
 .PHONY: all clean allclean
 
-#################
-# ffmpeg
-#################
-${dirm}/anidnx.mp4: MakeMovie.sh ${DNPNG} Init.sh
-	./Init.sh
-	./MakeMovie.sh dnx
-
-#################
-# gnuplot
-#################
-
-${DNPNG}: dn2dx.plt MakeSnap.sh ${XSS} Init.sh
-	./Init.sh
-	rm -fr ${dirf}/dnx*.png
-	./MakeSnap.sh
-
-${XSS}: ${exe} Init.sh
-	./Init.sh
-	rm -fr ${dird}/Sc*.xss
-	./${exe}
-
-fc=ifort -extend-source
+fc= nvfortran
 fopt=-g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
-${exe}: main.F
+${exe}: main.f90
 	${fc} ${fopt} $< -o ${exe}
 
 #################

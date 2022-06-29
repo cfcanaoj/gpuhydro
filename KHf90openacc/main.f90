@@ -1,18 +1,18 @@
-      module commons
+      module modbasic
       implicit none
       integer::nhy
       real(8)::time,dt
       data time / 0.0d0 /
       integer,parameter::ngrid=150
       integer,parameter::mgn=2
-      integer,parameter::in=ngrid+2*mgn+1
-     &                  ,jn=ngrid+2*mgn+1
+      integer,parameter::in=ngrid+2*mgn+1 &
+     &                  ,jn=ngrid+2*mgn+1 &
      &                  ,kn=1
-      integer,parameter::is=mgn+1
-     &                  ,js=mgn+1
+      integer,parameter::is=mgn+1 &
+     &                  ,js=mgn+1 &
      &                  ,ks=1
-      integer,parameter::ie=ngrid+mgn
-     &                  ,je=ngrid+mgn
+      integer,parameter::ie=ngrid+mgn &
+     &                  ,je=ngrid+mgn &
      &                  ,ke=1
 
       real(8),parameter:: x1min=-0.5d0,x1max=0.5d0
@@ -26,28 +26,28 @@
 
       real(8),parameter::gam=5.0d0/3.0d0
 
-      end module commons
+      end module modbasic
       
       module fluxmod
-      use commons, only : in,jn,kn
+      use modbasic, only : in,jn,kn
       implicit none
       integer,parameter::nden=1,nve1=2,nve2=3,nve3=4,nene=5,npre=6
       integer,parameter::nhyd=6
       real(8),dimension(nhyd,in,jn,kn):: svc
 
-      integer,parameter::mudn=1,muvu=2,muvv=3,muvw=4,muet=5
-     &                  ,mfdn=6,mfvu=7,mfvv=8,mfvw=9,mfet=10
+      integer,parameter::mudn=1,muvu=2,muvv=3,muvw=4,muet=5   &
+     &                  ,mfdn=6,mfvu=7,mfvv=8,mfvw=9,mfet=10  &
      &                  ,mcsp=11,mvel=12,mpre=13
       integer,parameter:: mflx=5,madd=3
 
-      integer,parameter:: mden=1,mrv1=2,mrv2=3,mrv3=4,meto=5
+      integer,parameter:: mden=1,mrv1=2,mrv2=3,mrv3=4,meto=5  &
      &                          ,mrvu=muvu,mrvv=muvv,mrvw=muvw
       real(8),dimension(mflx,in,jn,kn):: nflux1,nflux2,nflux3
 
       end module fluxmod
 
       program main
-      use commons
+      use modbasic
       implicit none
       write(6,*) "setup grids and fiels"
       call GenerateGrid
@@ -72,7 +72,7 @@
       end program main
 
       subroutine GenerateGrid
-      use commons
+      use modbasic
       implicit none
       real(8)::dx,dy
       integer::i,j,k
@@ -96,7 +96,7 @@
       end subroutine GenerateGrid
 
       subroutine GenerateProblem
-      use commons
+      use modbasic
       implicit none
       integer::i,j,k
       real(8) :: rho1,rho2,Lsm,u1,u2
@@ -153,7 +153,7 @@
       end subroutine GenerateProblem
 
       subroutine BoundaryCondition
-      use commons
+      use modbasic
       implicit none
       integer::i,j,k
 
@@ -206,17 +206,17 @@
       end subroutine BoundaryCondition
 
       subroutine ConsvVariable
-      use commons
+      use modbasic
       implicit none
       integer::i,j,k
       do k=ks,ke
       do j=js,je
       do i=is,ie
-          et(i,j,k) = 0.5d0*d(i,j,k)*(
-     &                    +v1(i,j,k)**2
-     &                    +v2(i,j,k)**2
-     &                    +v3(i,j,k)**2)
-     &                    +ei(i,j,k)
+          et(i,j,k) = 0.5d0*d(i,j,k)*(     &
+     &                    +v1(i,j,k)**2    &
+     &                    +v2(i,j,k)**2    &
+     &                    +v3(i,j,k)**2)   &
+     &                    +ei(i,j,k)   
           mv1(i,j,k) =d(i,j,k)*v1(i,j,k)
           mv2(i,j,k) =d(i,j,k)*v2(i,j,k)
           mv3(i,j,k) =d(i,j,k)*v3(i,j,k)
@@ -228,7 +228,7 @@
       end subroutine Consvvariable
 
       subroutine PrimVariable
-      use commons
+      use modbasic
       implicit none
       integer::i,j,k
       do k=ks,ke
@@ -238,10 +238,10 @@
           v2(i,j,k) = mv2(i,j,k)/d(i,j,k)
           v3(i,j,k) = mv3(i,j,k)/d(i,j,k)
 
-          ei(i,j,k) =  et(i,j,k)
-     &          -0.5d0*d(i,j,k)*(
-     &                    +v1(i,j,k)**2
-     &                    +v2(i,j,k)**2
+          ei(i,j,k) =  et(i,j,k)           &
+     &          -0.5d0*d(i,j,k)*(          &
+     &                    +v1(i,j,k)**2    &
+     &                    +v2(i,j,k)**2    &
      &                    +v3(i,j,k)**2)
 
            p(i,j,k) =  ei(i,j,k)*(gam-1.0d0)
@@ -254,7 +254,7 @@
       end subroutine PrimVariable
 
       subroutine TimestepControl
-      use commons
+      use modbasic
       implicit none
       real(8)::dtl1
       real(8)::dtl2
@@ -281,7 +281,7 @@
       end subroutine TimestepControl
 
       subroutine StateVevtor
-      use commons
+      use modbasic
       use fluxmod
       implicit none
       integer::i,j,k
@@ -309,7 +309,7 @@
       integer:: n
 
       do n=1,nhyd
-         d(n) = sign(1.0d0,a(n))*max(0.0d0,min(abs(a(n))
+         d(n) = sign(1.0d0,a(n))*max(0.0d0,min(abs(a(n)) &
      &                                        ,sign(1.0d0,a(n))*b(n)))
       enddo
 
@@ -346,8 +346,8 @@
       integer:: n
 
       do n=1,nhyd
-         d(n) = sign(1.0d0,a(n))*max(0.0d0,min(abs(a(n))
-     &                                  ,sign(1.0d0,a(n))*b(n)
+         d(n) = sign(1.0d0,a(n))*max(0.0d0,min(abs(a(n))         &
+     &                                  ,sign(1.0d0,a(n))*b(n)   &
      &                                  ,sign(1.0d0,a(n))*c(n)))
       enddo
 
@@ -355,7 +355,7 @@
       end subroutine MClimiter
 
       subroutine NumericalFlux1
-      use commons, only: is,ie,in,js,je,jn,ks,ke,kn,gam
+      use modbasic, only: is,ie,in,js,je,jn,ks,ke,kn,gam
       use fluxmod
       implicit none
       integer::i,j,k
@@ -381,26 +381,26 @@
       do j=js,je
       do i=is,ie+1
          leftco(mudn,i,j,k)=leftpr(nden,i,j,k) ! rho
-         leftco(muvu,i,j,k)=leftpr(nve1,i,j,k)*leftpr(nden,i,j,k)  ! rho v_x
-         leftco(muvv,i,j,k)=leftpr(nve2,i,j,k)*leftpr(nden,i,j,k)  ! rho v_y
-         leftco(muvw,i,j,k)=leftpr(nve3,i,j,k)*leftpr(nden,i,j,k)  ! rho v_z
-         leftco(muet,i,j,k)=leftpr(nene,i,j,k)*leftpr(nden,i,j,k)  ! e_i+ rho v^2/2
-     &               +0.5d0*leftpr(nden,i,j,k)*(
-     &                     +leftpr(nve1,i,j,k)**2
-     &                     +leftpr(nve2,i,j,k)**2
+         leftco(muvu,i,j,k)=leftpr(nve1,i,j,k)*leftpr(nden,i,j,k)     ! rho v_x
+         leftco(muvv,i,j,k)=leftpr(nve2,i,j,k)*leftpr(nden,i,j,k)     ! rho v_y
+         leftco(muvw,i,j,k)=leftpr(nve3,i,j,k)*leftpr(nden,i,j,k)     ! rho v_z
+         leftco(muet,i,j,k)=leftpr(nene,i,j,k)*leftpr(nden,i,j,k)   & ! e_i+ rho v^2/2
+     &               +0.5d0*leftpr(nden,i,j,k)*(           &
+     &                     +leftpr(nve1,i,j,k)**2         &
+     &                     +leftpr(nve2,i,j,k)**2          &
      &                     +leftpr(nve3,i,j,k)**2)
 
          leftco(mfdn,i,j,k)=leftpr(nden,i,j,k)                   *leftpr(nve1,i,j,k)
-         leftco(mfvu,i,j,k)=leftpr(nden,i,j,k)*leftpr(nve1,i,j,k)*leftpr(nve1,i,j,k)
+         leftco(mfvu,i,j,k)=leftpr(nden,i,j,k)*leftpr(nve1,i,j,k)*leftpr(nve1,i,j,k)  &
      &                     +leftpr(npre,i,j,k)
          leftco(mfvv,i,j,k)=leftpr(nden,i,j,k)*leftpr(nve2,i,j,k)*leftpr(nve1,i,j,k)
          leftco(mfvw,i,j,k)=leftpr(nden,i,j,k)*leftpr(nve3,i,j,k)*leftpr(nve1,i,j,k)
-         leftco(mfet,i,j,k)=(leftpr(nene,i,j,k)*leftpr(nden,i,j,k)
-     &               +0.5d0*leftpr(nden,i,j,k)*(
-     &                     +leftpr(nve1,i,j,k)**2
-     &                     +leftpr(nve2,i,j,k)**2
-     &                     +leftpr(nve3,i,j,k)**2)
-     &                     +leftpr(npre,i,j,k)
+         leftco(mfet,i,j,k)=(leftpr(nene,i,j,k)*leftpr(nden,i,j,k) &
+     &               +0.5d0*leftpr(nden,i,j,k)*(   &
+     &                     +leftpr(nve1,i,j,k)**2  &
+     &                     +leftpr(nve2,i,j,k)**2 &
+     &                     +leftpr(nve3,i,j,k)**2) &
+     &                     +leftpr(npre,i,j,k) &
      &                       )                                  *leftpr(nve1,i,j,k)
 
          leftco(mcsp,i,j,k)= sqrt(gam*(gam-1.0d0)*leftpr(nene,i,j,k))
@@ -412,23 +412,23 @@
          rigtco(muvu,i,j,k)=rigtpr(nve1,i,j,k)*rigtpr(nden,i,j,k)
          rigtco(muvv,i,j,k)=rigtpr(nve2,i,j,k)*rigtpr(nden,i,j,k)
          rigtco(muvw,i,j,k)=rigtpr(nve3,i,j,k)*rigtpr(nden,i,j,k)
-         rigtco(muet,i,j,k)=rigtpr(nene,i,j,k)*rigtpr(nden,i,j,k)
-     &               +0.5d0*rigtpr(nden,i,j,k)*(
-     &                     +rigtpr(nve1,i,j,k)**2
-     &                     +rigtpr(nve2,i,j,k)**2
+         rigtco(muet,i,j,k)=rigtpr(nene,i,j,k)*rigtpr(nden,i,j,k)   &
+     &               +0.5d0*rigtpr(nden,i,j,k)*(   &
+     &                     +rigtpr(nve1,i,j,k)**2 &
+     &                     +rigtpr(nve2,i,j,k)**2 &
      &                     +rigtpr(nve3,i,j,k)**2)
 
          rigtco(mfdn,i,j,k)=rigtpr(nden,i,j,k)                   *rigtpr(nve1,i,j,k)
-         rigtco(mfvu,i,j,k)=rigtpr(nden,i,j,k)*rigtpr(nve1,i,j,k)*rigtpr(nve1,i,j,k)
+         rigtco(mfvu,i,j,k)=rigtpr(nden,i,j,k)*rigtpr(nve1,i,j,k)*rigtpr(nve1,i,j,k)  &
      &                     +rigtpr(npre,i,j,k)
          rigtco(mfvv,i,j,k)=rigtpr(nden,i,j,k)*rigtpr(nve2,i,j,k)*rigtpr(nve1,i,j,k)
          rigtco(mfvw,i,j,k)=rigtpr(nden,i,j,k)*rigtpr(nve3,i,j,k)*rigtpr(nve1,i,j,k)
-         rigtco(mfet,i,j,k)=(rigtpr(nene,i,j,k)*rigtpr(nden,i,j,k)
-     &               +0.5d0*rigtpr(nden,i,j,k)*(
-     &                     +rigtpr(nve1,i,j,k)**2
-     &                     +rigtpr(nve2,i,j,k)**2
-     &                     +rigtpr(nve3,i,j,k)**2)
-     &                     +rigtpr(npre,i,j,k)
+         rigtco(mfet,i,j,k)=(rigtpr(nene,i,j,k)*rigtpr(nden,i,j,k)  &
+     &               +0.5d0*rigtpr(nden,i,j,k)*(  &
+     &                     +rigtpr(nve1,i,j,k)**2 &
+     &                     +rigtpr(nve2,i,j,k)**2 &
+     &                     +rigtpr(nve3,i,j,k)**2) &
+     &                     +rigtpr(npre,i,j,k) &
      &                      )                                    *rigtpr(nve1,i,j,k)
 
          rigtco(mcsp,i,j,k)= sqrt(gam*(gam-1.0d0)*rigtpr(nene,i,j,k))
@@ -456,7 +456,7 @@
       end subroutine Numericalflux1
 
       subroutine NumericalFlux2
-      use commons, only: is,ie,in,js,je,jn,ks,ke,kn,gam
+      use modbasic, only: is,ie,in,js,je,jn,ks,ke,kn,gam
       use fluxmod
       implicit none
       integer::i,j,k
@@ -489,23 +489,23 @@
          leftco(muvw,i,j,k)=leftpr(nve1,i,j,k)*leftpr(nden,i,j,k)
          leftco(muvu,i,j,k)=leftpr(nve2,i,j,k)*leftpr(nden,i,j,k) ! rho v
          leftco(muvv,i,j,k)=leftpr(nve3,i,j,k)*leftpr(nden,i,j,k)
-         leftco(muet,i,j,k)=leftpr(nene,i,j,k)*leftpr(nden,i,j,k)
-     &               +0.5d0*leftpr(nden,i,j,k)*(
-     &                     +leftpr(nve1,i,j,k)**2
-     &                     +leftpr(nve2,i,j,k)**2
+         leftco(muet,i,j,k)=leftpr(nene,i,j,k)*leftpr(nden,i,j,k)  &
+     &               +0.5d0*leftpr(nden,i,j,k)*(                   &
+     &                     +leftpr(nve1,i,j,k)**2                  &
+     &                     +leftpr(nve2,i,j,k)**2                  &
      &                     +leftpr(nve3,i,j,k)**2)
 
          leftco(mfdn,i,j,k)=leftpr(nden,i,j,k)                   *leftpr(nve2,i,j,k) ! rho v
          leftco(mfvw,i,j,k)=leftpr(nden,i,j,k)*leftpr(nve1,i,j,k)*leftpr(nve2,i,j,k)
-         leftco(mfvu,i,j,k)=leftpr(nden,i,j,k)*leftpr(nve2,i,j,k)*leftpr(nve2,i,j,k)
+         leftco(mfvu,i,j,k)=leftpr(nden,i,j,k)*leftpr(nve2,i,j,k)*leftpr(nve2,i,j,k) &
      &                     +leftpr(npre,i,j,k)
          leftco(mfvv,i,j,k)=leftpr(nden,i,j,k)*leftpr(nve3,i,j,k)*leftpr(nve2,i,j,k)
-         leftco(mfet,i,j,k)=(leftpr(nene,i,j,k)*leftpr(nden,i,j,k)
-     &               +0.5d0*leftpr(nden,i,j,k)*(
-     &                     +leftpr(nve1,i,j,k)**2
-     &                     +leftpr(nve2,i,j,k)**2
-     &                     +leftpr(nve3,i,j,k)**2)
-     &                     +leftpr(npre,i,j,k)
+         leftco(mfet,i,j,k)=(leftpr(nene,i,j,k)*leftpr(nden,i,j,k) &
+     &               +0.5d0*leftpr(nden,i,j,k)*(   &
+     &                     +leftpr(nve1,i,j,k)**2  &
+     &                     +leftpr(nve2,i,j,k)**2  &
+     &                     +leftpr(nve3,i,j,k)**2) &
+     &                     +leftpr(npre,i,j,k)     &
      &                                       )*leftpr(nve2,i,j,k)
 
          leftco(mcsp,i,j,k)= sqrt(gam*(gam-1.0d0)*leftpr(nene,i,j,k))
@@ -517,23 +517,23 @@
          rigtco(muvw,i,j,k)=rigtpr(nve1,i,j,k)*rigtpr(nden,i,j,k)
          rigtco(muvu,i,j,k)=rigtpr(nve2,i,j,k)*rigtpr(nden,i,j,k)
          rigtco(muvv,i,j,k)=rigtpr(nve3,i,j,k)*rigtpr(nden,i,j,k)
-         rigtco(muet,i,j,k)=rigtpr(nene,i,j,k)*rigtpr(nden,i,j,k)
-     &               +0.5d0*rigtpr(nden,i,j,k)*(
-     &                     +rigtpr(nve1,i,j,k)**2
-     &                     +rigtpr(nve2,i,j,k)**2
-     &                     +rigtpr(nve3,i,j,k)**2)
+         rigtco(muet,i,j,k)=rigtpr(nene,i,j,k)*rigtpr(nden,i,j,k) &
+     &               +0.5d0*rigtpr(nden,i,j,k)*(   &
+     &                     +rigtpr(nve1,i,j,k)**2  &
+     &                     +rigtpr(nve2,i,j,k)**2  &
+     &                     +rigtpr(nve3,i,j,k)**2) 
 
          rigtco(mfdn,i,j,k)=rigtpr(nden,i,j,k)                   *rigtpr(nve2,i,j,k)
          rigtco(mfvw,i,j,k)=rigtpr(nden,i,j,k)*rigtpr(nve1,i,j,k)*rigtpr(nve2,i,j,k)
-         rigtco(mfvu,i,j,k)=rigtpr(nden,i,j,k)*rigtpr(nve2,i,j,k)*rigtpr(nve2,i,j,k)
+         rigtco(mfvu,i,j,k)=rigtpr(nden,i,j,k)*rigtpr(nve2,i,j,k)*rigtpr(nve2,i,j,k) &
      &                     +rigtpr(npre,i,j,k)
          rigtco(mfvv,i,j,k)=rigtpr(nden,i,j,k)*rigtpr(nve3,i,j,k)*rigtpr(nve2,i,j,k)
-         rigtco(mfet,i,j,k)=(rigtpr(nene,i,j,k)*rigtpr(nden,i,j,k)
-     &               +0.5d0*rigtpr(nden,i,j,k)*(
-     &                     +rigtpr(nve1,i,j,k)**2
-     &                     +rigtpr(nve2,i,j,k)**2
-     &                     +rigtpr(nve3,i,j,k)**2)
-     &                     +rigtpr(npre,i,j,k)
+         rigtco(mfet,i,j,k)=(rigtpr(nene,i,j,k)*rigtpr(nden,i,j,k) &
+     &               +0.5d0*rigtpr(nden,i,j,k)*(    &
+     &                     +rigtpr(nve1,i,j,k)**2   &
+     &                     +rigtpr(nve2,i,j,k)**2   &
+     &                     +rigtpr(nve3,i,j,k)**2)  &
+     &                     +rigtpr(npre,i,j,k)      &
      &                                       )*rigtpr(nve2,i,j,k)
 
          rigtco(mcsp,i,j,k)= sqrt(gam*(gam-1.0d0)*rigtpr(nene,i,j,k))
@@ -603,10 +603,10 @@
 ! Input
 ! Output
 !=====================================================================
-      use fluxmod, only: mflx,madd
-     &                 , mudn,muvu,muvv,muvw,muet
-     &                 , mfdn,mfvu,mfvv,mfvw,mfet
-     &                 , mcsp,mvel,mpre
+      use fluxmod, only: mflx,madd &
+     &                 , mudn,muvu,muvv,muvw,muet &
+     &                 , mfdn,mfvu,mfvv,mfvw,mfet &
+     &                 , mcsp,mvel,mpre &
      &                 , mden,mrvu,mrvv,mrvw,meto
 
       implicit none
@@ -768,22 +768,22 @@
         msl   = min(sl  ,0.0d0)   ! 0 for sl > 0, sl for sl < 0
         msr   = max(sr  ,0.0d0)   ! S_R > 0
 
-        nflux(mden) = (frol+msl*(rolst-rol))*maxs1
+        nflux(mden) = (frol+msl*(rolst-rol))*maxs1  &
      &               +(fror+msr*(rorst-ror))*mins1
-        nflux(meto) = (feel+msl*(eelst-eel))*maxs1 
+        nflux(meto) = (feel+msl*(eelst-eel))*maxs1  &
      &               +(feer+msr*(eerst-eer))*mins1
-        nflux(mrvu) = (frxl+msl*(rxlst-rxl))*maxs1 
+        nflux(mrvu) = (frxl+msl*(rxlst-rxl))*maxs1  &
      &               +(frxr+msr*(rxrst-rxr))*mins1
-        nflux(mrvv) = (fryl+msl*(rylst-ryl))*maxs1 
+        nflux(mrvv) = (fryl+msl*(rylst-ryl))*maxs1  &
      &               +(fryr+msr*(ryrst-ryr))*mins1
-        nflux(mrvw) = (frzl+msl*(rzlst-rzl))*maxs1 
+        nflux(mrvw) = (frzl+msl*(rzlst-rzl))*maxs1  &
      &               +(frzr+msr*(rzrst-rzr))*mins1
 
       return
       end subroutine HLLC
 
       subroutine UpdateConsv
-      use commons
+      use modbasic
       use fluxmod
       implicit none
       integer::i,j,k
@@ -792,44 +792,44 @@
       do j=js,je
       do i=is,ie
          
-         d(i,j,k) = d(i,j,k) 
-     & +dt*(
-     &  (- nflux1(mden,i+1,j,k)
-     &   + nflux1(mden,i  ,j,k))/(x1a(i+1)-x1a(i)) 
-     & +(- nflux2(mden,i,j+1,k)
-     &   + nflux2(mden,i,j  ,k))/(x2a(j+1)-x2a(j)) 
+         d(i,j,k) = d(i,j,k)  &
+     & +dt*( &
+     &  (- nflux1(mden,i+1,j,k) &
+     &   + nflux1(mden,i  ,j,k))/(x1a(i+1)-x1a(i))  &
+     & +(- nflux2(mden,i,j+1,k) &
+     &   + nflux2(mden,i,j  ,k))/(x2a(j+1)-x2a(j))  &
      &      )
 
-         mv1(i,j,k) = mv1(i,j,k) 
-     & +dt*(
-     &  (- nflux1(mrv1,i+1,j,k)
-     &   + nflux1(mrv1,i  ,j,k))/(x1a(i+1)-x1a(i)) 
-     & +(- nflux2(mrv1,i,j+1,k)
-     &   + nflux2(mrv1,i,j  ,k))/(x2a(j+1)-x2a(j)) 
+         mv1(i,j,k) = mv1(i,j,k)  &
+     & +dt*( &
+     &  (- nflux1(mrv1,i+1,j,k) &
+     &   + nflux1(mrv1,i  ,j,k))/(x1a(i+1)-x1a(i))  &
+     & +(- nflux2(mrv1,i,j+1,k) &
+     &   + nflux2(mrv1,i,j  ,k))/(x2a(j+1)-x2a(j)) & 
      &      )
 
-         mv2(i,j,k) = mv2(i,j,k) 
-     & +dt*(
-     &  (- nflux1(mrv2,i+1,j,k)
-     &   + nflux1(mrv2,i  ,j,k))/(x1a(i+1)-x1a(i)) 
-     & +(- nflux2(mrv2,i,j+1,k)
-     &   + nflux2(mrv2,i,j  ,k))/(x2a(j+1)-x2a(j)) 
+         mv2(i,j,k) = mv2(i,j,k)  &
+     & +dt*( &
+     &  (- nflux1(mrv2,i+1,j,k) &
+     &   + nflux1(mrv2,i  ,j,k))/(x1a(i+1)-x1a(i)) & 
+     & +(- nflux2(mrv2,i,j+1,k) &
+     &   + nflux2(mrv2,i,j  ,k))/(x2a(j+1)-x2a(j))  &
      &      )
 
-         mv3(i,j,k) = mv3(i,j,k) 
-     & +dt*(
-     &  (- nflux1(mrv3,i+1,j,k)
-     &   + nflux1(mrv3,i  ,j,k))/(x1a(i+1)-x1a(i)) 
-     & +(- nflux2(mrv3,i,j+1,k)
-     &   + nflux2(mrv3,i,j  ,k))/(x2a(j+1)-x2a(j)) 
+         mv3(i,j,k) = mv3(i,j,k)  &
+     & +dt*( &
+     &  (- nflux1(mrv3,i+1,j,k) &
+     &   + nflux1(mrv3,i  ,j,k))/(x1a(i+1)-x1a(i))  &
+     & +(- nflux2(mrv3,i,j+1,k) &
+     &   + nflux2(mrv3,i,j  ,k))/(x2a(j+1)-x2a(j)) & 
      &      )
 
-          et(i,j,k) = et(i,j,k) 
-     & +dt*(
-     &  (- nflux1(meto,i+1,j,k)
-     &   + nflux1(meto,i  ,j,k))/(x1a(i+1)-x1a(i)) 
-     & +(- nflux2(meto,i,j+1,k)
-     &   + nflux2(meto,i,j  ,k))/(x2a(j+1)-x2a(j)) 
+          et(i,j,k) = et(i,j,k)  &
+     & +dt*( &
+     &  (- nflux1(meto,i+1,j,k) &
+     &   + nflux1(meto,i  ,j,k))/(x1a(i+1)-x1a(i)) & 
+     & +(- nflux2(meto,i,j+1,k) &
+     &   + nflux2(meto,i,j  ,k))/(x2a(j+1)-x2a(j)) & 
      &      )
       enddo
       enddo
@@ -839,7 +839,7 @@
       end subroutine UpdateConsv
 
       subroutine Output
-      use commons
+      use modbasic
       implicit none
       integer::i,j,k
       character(20),parameter::dirname="meddata/"
