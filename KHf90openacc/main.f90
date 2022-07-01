@@ -291,6 +291,7 @@
       integer::i,j,k
       dtmin=1.0d90
 !$acc kernels    
+!$acc loop reduction(min:dtmin)      
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -398,10 +399,14 @@
       real(8),dimension(2*mflx+madd,in,jn,kn):: leftco,rigtco
       real(8),dimension(2*mflx+madd):: leftst,rigtst
       real(8),dimension(mflx):: nflux
+!$acc declare create(leftco,rigtco)
+!$acc declare create(leftpr,rigtpr)
+
+!$acc data present(leftco,rigtco,leftpr,rigtpr)
 
 !$acc kernels
       k=ks
-!$acc loop independent
+!$acc loop independent private(dsv,dsvp,dsvm)
       do j=js,je
       do i=is-1,ie+1
          dsvp(:) = (svc(:,i+1,j,k) -svc(:,i,j,k)                 )
@@ -493,7 +498,8 @@
       enddo
       enddo
 !$acc end kernels
-
+!$acc end data
+      
       return
       end subroutine Numericalflux1
 
@@ -507,10 +513,14 @@
       real(8),dimension(2*mflx+madd,in,jn,kn):: leftco,rigtco
       real(8),dimension(2*mflx+madd):: leftst,rigtst
       real(8),dimension(mflx):: nflux
+!$acc declare create(leftco,rigtco)
+!$acc declare create(leftpr,rigtpr)
+
+!$acc data present(leftco,rigtco,leftpr,rigtpr)
 
 !$acc kernels
       k=ks
-!$acc loop independent private (dsv,dsvp,dsvm)
+!$acc loop independent private(dsv,dsvp,dsvm)
       do i=is,ie
       do j=js-1,je+1
          dsvp(:) = (svc(:,i,j+1,k) -svc(:,i,j,k)                 )
@@ -594,7 +604,7 @@
 
 !$acc kernels
       k=ks
-!$acc loop independent
+!$acc loop independent private (leftst,rigtst,nflux)
       do i=is,ie
       do j=js,je+1
          leftst(:)=leftco(:,i,j,k)
@@ -608,6 +618,7 @@
       enddo
       enddo
 !$acc end kernels
+!$acc end data
 
       return
       end subroutine Numericalflux2
