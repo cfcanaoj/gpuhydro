@@ -6,5 +6,6 @@
 *.o
 *.mod
 *.lst
-*.log
 *.x
+log.dat
+*.out
