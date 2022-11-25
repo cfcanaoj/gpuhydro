@@ -1,6 +1,7 @@
       module modbasic
       implicit none
       integer::nhy
+      integer,parameter::nhymax=20000
       real(8)::time,dt
       data time / 0.0d0 /
       integer,parameter::ngrid=150
@@ -63,15 +64,19 @@
 
       program main
       use modbasic
+      use omp_lib
       implicit none
+      real(8)::time_begin,time_end
+      logical:: nooutput=.true.
       write(6,*) "setup grids and fiels"
       call GenerateGrid
       call GenerateProblem
       call ConsvVariable
       write(6,*) "entering main loop"
 ! main loop
-      do nhy=1,20000
-         if(mod(nhy,100) .eq. 0 )write(6,*)nhy,time,dt
+      time_begin = omp_get_wtime()
+      do nhy=1,nhymax
+         if(mod(nhy,100) .eq. 0 .and. .not. nooutput)write(6,*)nhy,time,dt
          call TimestepControl
          call BoundaryCondition
          call StateVevtor
@@ -80,9 +85,12 @@
          call UpdateConsv
          call PrimVariable
          time=time+dt
-         call Output
+         if(.not. nooutput) call Output
       enddo
-
+      time_end = omp_get_wtime()
+      write(6,*) "sim time [s]:", time_end-time_begin
+      write(6,*) "time/count/cell", (time_end-time_begin)/(ngrid**2)/nhymax
+      
       write(6,*) "program has been finished"
       end program main
 
