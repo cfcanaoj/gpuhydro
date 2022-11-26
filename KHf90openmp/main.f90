@@ -5,7 +5,7 @@
       integer,parameter::nhymax=20000
       real(8)::time,dt
       data time / 0.0d0 /
-      integer,parameter::ngrid=150
+      integer,parameter::ngrid=500
       integer,parameter::mgn=2
       integer,parameter::in=ngrid+2*mgn+1 &
      &                  ,jn=ngrid+2*mgn+1 &
@@ -53,7 +53,7 @@
       use omp_lib
       implicit none
       real(8)::time_begin,time_end
-      logical,parameter::nooutput=.true.
+      logical,parameter::nooutput=.false.
       write(6,*) "setup grids and fiels"
       call GenerateGrid
       call GenerateProblem
@@ -276,7 +276,7 @@
       integer::i,j,k
       dtmin=1.0d90
 
-!$omp parallel do reduction(min:dtmin)      
+!$omp parallel do reduction(min:dtmin) private(dtl1,dtl2,dtl3,dtlocal)      
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -461,7 +461,7 @@
       enddo
 !$omp end parallel do
 
-!$omp parallel do
+!$omp parallel do private(leftst,rigtst,nflux)
       do j=js,je
       do i=is,ie+1
          leftst(:)=leftco(:,i,j,k)
@@ -491,7 +491,7 @@
       real(8),dimension(mflx):: nflux
       k=ks
 
-!$omp parallel do
+!$omp parallel do private(dsv,dsvp,dsvm)
       do i=is,ie
       do j=js-1,je+1
          dsvp(:) = (svc(:,i,j+1,k) -svc(:,i,j,k)                 )
@@ -573,7 +573,7 @@
 !$omp end parallel do
 
       k=ks
-!$omp parallel do
+!$omp parallel do private(leftst,rigtst,nflux)
       do i=is,ie
       do j=js,je+1
          leftst(:)=leftco(:,i,j,k)
