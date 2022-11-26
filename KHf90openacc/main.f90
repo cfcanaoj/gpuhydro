@@ -187,6 +187,7 @@
 
 !$acc kernels      
       k=ks
+!$acc loop collapse(2) independent
       do j=1,jn-1
       do i=1,mgn
            d(i,j,k) =  d(ie-mgn+i,j,k)
@@ -198,6 +199,7 @@
       enddo
 
       k=ks
+!$acc loop collapse(2) independent
       do j=1,jn-1
       do i=1,mgn
            d(ie+i,j,k) =  d(is+i-1,j,k)
@@ -209,6 +211,7 @@
       enddo
 
       k=ks
+!$acc loop collapse(2) independent
       do i=1,in-1
       do j=1,mgn
            d(i,j,k) =  d(i,je-mgn+j,k)
@@ -220,6 +223,7 @@
       enddo
 
       k=ks
+!$acc loop collapse(2) independent
       do i=1,in-1
       do j=1,mgn
            d(i,je+j,k) =  d(i,js+j-1,k)
@@ -239,7 +243,7 @@
       implicit none
       integer::i,j,k
 !$acc kernels      
-!$acc loop independent
+!$acc loop collapse(3) independent
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -265,7 +269,7 @@
       integer::i,j,k
       
 !$acc kernels      
-!$acc loop independent
+!$acc loop collapse(3) independent
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -299,7 +303,7 @@
       integer::i,j,k
       dtmin=1.0d90
 !$acc kernels    
-!$acc loop reduction(min:dtmin)      
+!$acc loop collapse(3) reduction(min:dtmin)      
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -414,9 +418,8 @@
 
 !$acc kernels
       k=ks
-!$acc loop independent
+!$acc loop collapse(2) independent private(dsv,dsvp,dsvm)
       do j=js,je
-!$acc loop independent private(dsv,dsvp,dsvm)
       do i=is-1,ie+1
          dsvp(:) = (svc(:,i+1,j,k) -svc(:,i,j,k)                 )
          dsvm(:) = (                svc(:,i,j,k) - svc(:,i-1,j,k))
@@ -430,7 +433,7 @@
 !$acc end kernels
 
 !$acc kernels
-!$acc loop independent
+!$acc loop collapse(2) independent
       do j=js,je
       do i=is,ie+1
          leftco(mudn,i,j,k)=leftpr(nden,i,j,k) ! rho
@@ -493,9 +496,8 @@
 !$acc end kernels
 
 !$acc kernels
-!$acc loop independent
+!$acc loop collapse(2) independent  private(leftst,rigtst,nflux)
       do j=js,je
-!$acc loop independent private(leftst,rigtst,nflux)
       do i=is,ie+1
          leftst(:)=leftco(:,i,j,k)
          rigtst(:)=rigtco(:,i,j,k)
@@ -530,9 +532,8 @@
 
 !$acc kernels
       k=ks
-!$acc loop independent
+!$acc loop collapse(2) independent  private(dsv,dsvp,dsvm)
       do i=is,ie
-!$acc loop independent private(dsv,dsvp,dsvm)
       do j=js-1,je+1
          dsvp(:) = (svc(:,i,j+1,k) -svc(:,i,j,k)                 )
          dsvm(:) = (                svc(:,i,j,k) - svc(:,i,j-1,k))
@@ -551,7 +552,7 @@
        
 !$acc kernels
       k=ks
-!$acc loop independent
+!$acc loop collapse(2) independent
       do i=is,ie
       do j=js,je+1
          leftco(mudn,i,j,k)=leftpr(nden,i,j,k)
@@ -615,9 +616,8 @@
 
 !$acc kernels
       k=ks
-!$acc loop independent
+!$acc loop collapse(2) independent  private (leftst,rigtst,nflux)
       do i=is,ie
-!$acc loop independent private (leftst,rigtst,nflux)
       do j=js,je+1
          leftst(:)=leftco(:,i,j,k)
          rigtst(:)=rigtco(:,i,j,k)
@@ -672,7 +672,7 @@
       integer::i,j,k
 
 !$acc kernels
-!$acc loop independent
+!$acc loop collapse(3) independent
       do k=ks,ke
       do j=js,je
       do i=is,ie
