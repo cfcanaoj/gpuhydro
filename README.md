@@ -3,8 +3,8 @@ To foster GPU computing, we show sample codes of hydrodynamic simulations in thi
 
 ## Fortran witn OpenACC
 
-[2D Kelvin-Helmholtz Instability](KHf90openacc/README.md)
-To compare the performance with its CPU version, we have also prepared [openmp version](KHf90openmp/README.md). 
+### 2D Kelvin-Helmholtz Instability
+The code for GPU computaiton is prepared in [./KHf90openacc/](KHf90openacc). To compare the performance with its CPU version, we have also prepared  openmp version in [./KHf90openmp/](KHf90openmp). 
 
 
 # Link
