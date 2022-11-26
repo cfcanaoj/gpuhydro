@@ -4,7 +4,7 @@
       integer,parameter::nhymax=20000
       real(8)::time,dt
       data time / 0.0d0 /
-      integer,parameter::ngrid=150
+      integer,parameter::ngrid=500
       integer,parameter::mgn=2
       integer,parameter::in=ngrid+2*mgn+1 &
      &                  ,jn=ngrid+2*mgn+1 &
@@ -67,7 +67,7 @@
       use omp_lib
       implicit none
       real(8)::time_begin,time_end
-      logical:: nooutput=.true.
+      logical:: nooutput=.false.
       write(6,*) "setup grids and fiels"
       call GenerateGrid
       call GenerateProblem
