@@ -19,7 +19,8 @@ Before running job, pleaes check the category of you in `pbs_xc.sh`.
 Let us move to analysis server.
 
     ssh an10@cfca.nao.ac.jp
-    cd /xc-work/<username>/gpuhydro/KHf90openaccc
+    cp /xc-work/<username>/gpuhydro/KHf90openaccc .
+    cd KHf90openaccc
     module load gnuplot
     gnuplot dn2dx.plt
     display figures/dnx00100.png
