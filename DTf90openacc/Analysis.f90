@@ -268,6 +268,8 @@ subroutine Fourier
   character(40)::filename
   integer,parameter::unitspc=21
   integer,parameter::unittot=22
+  integer,save::nout
+  data nout / 1 /
   logical,save:: is_inited
   data is_inited / .false. /
   
@@ -402,7 +404,7 @@ subroutine Fourier
   enddo
 
   
-  write(filename,'(a3,i5.5,a4)')"spc",incr,".dat"
+  write(filename,'(a3,i5.5,a4)')"spc",nout,".dat"
   filename = trim(dirname)//filename
   open(unitspc,file=filename,status='replace',form='formatted')
   write(unitspc,*) "# ",time
@@ -415,12 +417,13 @@ subroutine Fourier
   enddo
   close(unitspc)
 
-
-  write(filename,'(a3,i5.5,a4)')"tot",incr,".dat"
+  write(filename,'(a3,i5.5,a4)')"tot",nout,".dat"
   filename = trim(dirname)//filename
   open(unittot,file=filename,status='replace',form='formatted')
   write(unittot,'(6(1x,E12.3))') time,Xtot(1),Xtot(2),Xtot(3),Xtot(4),Xtot(5)
   close(unittot)
 
+  nout=nout+1
+  
   return
 end subroutine Fourier
