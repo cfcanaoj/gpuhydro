@@ -1,42 +1,49 @@
-# 2D magneto-hydrodynamic deacaying turbulence
+# 3D magneto-hydrodynamic deacaying turbulence
 
-[Go to top](../README.md)  
+## How to copy the source code
+After you login the server, `g00.cfca.nao.ac.jp`, follow the instruction.
 
+    cd /gwork0/<username>
+    git clone git@github.com:cfcanaoj/gpuhydro gpuhydro
+    cd gpuhydro/DTf90openaccc
+    
 
 ## How to run
 
 ### compile 
-To run the code, you need to compile 'Simulation.f90'.
+To run the code, you need to compile 'Simulation.f90' in GPU server.
     
-    make simulation-code
+    make Simulation.x
     
 Then `Simulation.x`is made in this directory.
 
 ### run
 Let's run the code.
     
-    make run
+    sbatch sj_g00.sh
     
 The simulation data is saved in `bindata/`.
 
 ### analysis
-To analyze the data, let us make `Analysis.x`.
+To analyze the data, let us make `Analysis.x` in GPU server..
     
-    make analysis-code
+    make Analysis.x
     
 Now you have many time-snapshots of data. To count it, use a script.
     
-    make count-number
+    CountBindata.sh
    
 See the file, `cat control.dat`. You can know the number of files.
 Then preparation is done. Run the analyis.
     
-    make run-analysis
+    sbatch sj_g00_ana.sh
     
 The output is saved in `output/`.
 ### 2D plots and animation.
-If you need 2D snapshots. 
+If you need 2D snapshots. cp `bindata` and output` in GPU server to 'HYD2D' in analyis server.
     
+    cp -r ???/bindata .
+    cp -r ???/output .
     make 2Dsnaps
    
 Using `output/vor*.dat`, image files are made and save as `figures/vor*.png`.
@@ -47,14 +54,12 @@ To make movie from the files. Type as follows.
 The movie files in saved in `movie/anivor`.
 
 ### spectrum
+If you need 2D snapshots. cp `bindata` and output` in GPU server to `HYD2D` in analyis server.
 To obtain the spectrum
    
-      make spectrum
-      
-### Do all of them
-To do all in one command, you just type `make` or `make all`.
-   
-      make all
+    cp -r ???/bindata .
+    cp -r ???/output .
+    make spectrum
       
 ## initial condition
 stream function is given.
