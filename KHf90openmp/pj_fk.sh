@@ -11,7 +11,6 @@
 
 export PARALLEL=48
 export OMP_NUM_THREADS=$PARALLEL
-export FORT90L=-Wl,-T
 export XOS_MMM_L_HPAGE_TYPE=none
 
 # batch scripts for fugaku
