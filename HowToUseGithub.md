@@ -3,20 +3,21 @@
 To download the source code, you need an account of [github](https://github.com/).
 
 ## Make ssh key
-After you login one of cfca servers, e.g., `g00.cfca.nao.ac.jp`, first you need to make ssh keys.
+After you login one of cfca servers, e.g., `g00.cfca.nao.ac.jp`, first you need to make ssh keys. The password is required.
     
-    Host github.com
-         IdentityFile ~/.ssh/id_rsa_git
-	 
+    ssh-keygen -t rsa -f .ssh/id_rsa_git
+    
+Then two files are created. `.ssh/id_rsa_git` is the private key. `.ssh/id_rsa_git.pub` is the public key. Submit the public key in [github site](https://github.com/).
+
+## Setup
 
 Please edit `~/.ssh/config`.
     
     Host github.com
          IdentityFile ~/.ssh/id_rsa_git
 
+## Download
+You can download the file with the following command.
 
-After you login the server, `g00.cfca.nao.ac.jp`, follow the instruction. 
-    cd /gwork0/<username>
     git clone git@github.com:cfcanaoj/gpuhydro gpuhydro
-    cd gpuhydro/KHf90openaccc
     
