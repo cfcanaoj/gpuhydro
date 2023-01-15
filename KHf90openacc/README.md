@@ -1,13 +1,10 @@
 # Kelvin-Helmholtz Instability Test
 
 ## How to copy the source code
-You need an account of [github](https://github.com/). Please submit your public key in github site.
-    
-    Host github.com
-         IdentityFile ~/.ssh/id_rsa_git
-	 
+First you need the setup for ssh-connection to github (see [the instrcution](../HowToUseGithub.md)).
 
-After you login the server, `g00.cfca.nao.ac.jp`, follow the instruction. 
+After you login the server, `g00.cfca.nao.ac.jp`, perform the following command.
+    
     cd /gwork0/<username>
     git clone git@github.com:cfcanaoj/gpuhydro gpuhydro
     cd gpuhydro/KHf90openaccc
