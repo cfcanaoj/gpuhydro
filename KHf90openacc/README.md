@@ -1,8 +1,13 @@
 # Kelvin-Helmholtz Instability Test
 
 ## How to copy the source code
-After you login the server, `g00.cfca.nao.ac.jp`, follow the instruction.
+You need an account of [github](https://github.com/). Please submit your public key in github site.
+    
+    Host github.com
+         IdentityFile ~/.ssh/id_rsa_git
+	 
 
+After you login the server, `g00.cfca.nao.ac.jp`, follow the instruction. 
     cd /gwork0/<username>
     git clone git@github.com:cfcanaoj/gpuhydro gpuhydro
     cd gpuhydro/KHf90openaccc
@@ -26,6 +31,17 @@ Let us move to analysis server.
 ## Description of the problem
 
 https://www.astro.princeton.edu/~jstone/Athena/tests/kh/kh.html
+
+## Profile
+Run the code with profiler.
+
+    sbatch sj_g00prof.sh
+
+In `sj_g00prof.sh' the profiler is called as follows. 
+   
+   nsys profile -o khprof ./kh.x
+   
+The profile data is summarized in `khprof.nsys-rep`.
 
 ## Numerical setup
 
