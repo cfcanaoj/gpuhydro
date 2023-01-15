@@ -1,5 +1,5 @@
 #! /bin/bash
-#SBATCH --partition=dgx-full
+#SBATCH --partition=ga80-1gpu
 #SBATCH --gres=gpu:1
 
 # usage sbatch sj_g00.sh
@@ -8,4 +8,9 @@
 # squeue
 
 module load nvhpc
-./kh.x > log.dat
+
+# original program
+./kh_ori.x > log.dat
+
+# practice program
+#./kh_pra.x > log.dat

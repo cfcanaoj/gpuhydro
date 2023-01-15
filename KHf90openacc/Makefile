@@ -1,8 +1,9 @@
 dird := snapshots
 
-exe=kh.x
+exeori=kh_ori.x
+exepra=kh_pra.x
 
-all: ${exe}
+all: ${exeori} ${exepra}
 
 .PHONY: all clean allclean
 
@@ -11,8 +12,11 @@ foptopenacc = -Minfo=accel -acc
 fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
-${exe}: main.f90
-	${fc} ${fopt} ${foptopenacc} $< -o ${exe}
+${exeori}: main_ori.f90
+	${fc} ${fopt} ${foptopenacc} $< -o ${exeori}
+
+${exepra}: main_pra.f90
+	${fc} ${fopt} ${foptopenacc} $< -o ${exepra}
 
 #################
 # clean up
