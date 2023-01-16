@@ -1,7 +1,7 @@
 #!/bin/bash
 
-dirf=figures/
-dirm=movies/
+dirf=figures_ori/
+dirm=movies_ori/
 
 if [ $# -ne 1 ];then
     echo "usage:" $0 prefix
