@@ -11,7 +11,7 @@ Then two files are created. `.ssh/id_rsa_git` is the private key. `.ssh/id_rsa_g
 
 ## Setup
 
-Please edit `~/.ssh/config`.
+Please edit `~/.ssh/config` and add the following setting.
     
     Host github.com
          IdentityFile ~/.ssh/id_rsa_git
