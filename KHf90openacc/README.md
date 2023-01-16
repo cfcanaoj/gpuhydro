@@ -19,7 +19,7 @@ After you login the server, `g00.cfca.nao.ac.jp`, perform the following command.
 ## How to see the results
 Let us move to analysis server.
 
-    ssh an10@cfca.nao.ac.jp
+    ssh <username>@an.cfca.nao.ac.jp
     cd /gwork0/<username>/gpuhydro/KHf90openaccc
     module load gnuplot
     gnuplot dn2dx_ori.plt
