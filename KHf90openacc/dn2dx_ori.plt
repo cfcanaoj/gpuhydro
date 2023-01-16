@@ -41,7 +41,7 @@ if (exist("ifnum")==0 ) set term push
 set term pngcairo enhanced font "Helvetica, 12" size 600,600
 # crop 
 
-if (exist("ifnum")==0 ) ifnum=100
+if (exist("ifnum")==0 ) ifnum=70
 
 ifnames = sprintf("snapshots_ori/Sc%05d.xss",ifnum)
 
