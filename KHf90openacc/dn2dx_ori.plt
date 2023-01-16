@@ -43,7 +43,7 @@ set term pngcairo enhanced font "Helvetica, 12" size 600,600
 
 if (exist("ifnum")==0 ) ifnum=100
 
-ifnames = sprintf("snapshots/Sc%05d.xss",ifnum)
+ifnames = sprintf("snapshots_ori/Sc%05d.xss",ifnum)
 
 command = sprintf("ls %s 1> /dev/null 2> /dev/null ; echo $? ",ifnames)
 flag=0
@@ -60,8 +60,8 @@ set cbtics 1.0
 set cbtics offset 0,3.2
 
 set cbrange [0.9:2.1]
-system("if [ ! -d figures ]; then mkdir -p figures ; fi")
-ofname = sprintf("figures/dnx%05d.png",ifnum)
+system("if [ ! -d figures_ori ]; then mkdir -p figures_ori ; fi")
+ofname = sprintf("figures_ori/dnx%05d.png",ifnum)
 set output ofname
 
 set size 1.0
