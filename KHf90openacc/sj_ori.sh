@@ -10,4 +10,4 @@
 module load nvhpc
 
 # original program
-./kh_ori.x > log.dat
+./kh_ori.x > log_ori.dat

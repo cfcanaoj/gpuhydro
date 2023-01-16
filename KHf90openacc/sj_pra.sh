@@ -10,4 +10,4 @@
 module load nvhpc
 
 # practice program
-./kh_pra.x > log.dat
+./kh_pra.x > log_pra.dat
