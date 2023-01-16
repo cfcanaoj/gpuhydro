@@ -2,7 +2,7 @@
 これは[2022年度GPU講習会2](https://www.cfca.nao.ac.jp/content/gpu_workshop_2022_2)の[流体力学計算のFortran+OpenACCによる実装例](https://qiita.com/takiwaki_tomoya/items/af059b7fb8877f0e3d79)の資料です。
 
 ## ログイン
-vpnを繋ぎ、`ssh`で`g00.cfca.nao.ac.jp`にログインします。以下<username>はあなたのユーザーネームです（`gpuws??`）。
+vpnを繋ぎ、`ssh`で`g00.cfca.nao.ac.jp`にログインします。以下`<username>`はあなたのユーザーネームです（`gpuws??`）。
     
     ssh -XY <username>@g00.cfca.nao.ac.jp
 
@@ -53,3 +53,9 @@ OpenACC化できたら、テストしてみましょう。まずはお手本コ�
     display figures_pra/dnx00070.png
     
 同じような結果になったでしょうか？
+
+## 計測
+`main_ori.f90`と`main_pra.f90`の中の以下のフラグを`.true.`にするとファイルをアウトプットするのをやめて時間が計測できます。`log_ori.dat`,`log_pra.dat`,をご確認ください。
+　　　　　
+　　　　      logical:: nooutput=.false.
+          
