@@ -52,7 +52,7 @@
       use omp_lib
       implicit none
       real(8)::time_begin,time_end
-      logical:: nooutput=.true.
+      logical:: nooutput=.false.
       write(6,*) "setup grids and fiels"
       call GenerateGrid
       call GenerateProblem
