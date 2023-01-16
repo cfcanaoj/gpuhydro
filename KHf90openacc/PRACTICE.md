@@ -43,4 +43,13 @@ OpenACC化できたら、テストしてみましょう。まずはお手本コ�
 プログラム結果が正しいかどうか確認してみます。
     
     ssh -XY <username>@an.cfca.nao.ac.jp
-    cd /cfca-work/<username>/gpuhydro/KHf90openacc .
+    cd /cfca-work/<username>/gpuhydro/KHf90openacc
+    
+お手本コードの結果と練習コードの結果を可視化します。
+    
+    gnuplot dn2dx_ori.plt 
+    gnuplot dn2dx_pra.plt 
+    display figures_ori/dnx00070.png
+    display figures_pra/dnx00070.png
+    
+同じような結果になったでしょうか？
