@@ -18,6 +18,10 @@ OpenACC化されたお手本のファイルとして`main_ori.f90`が用意さ�
 こちらのファイルを開いて、(https://www.cfca.nao.ac.jp/content/gpu_workshop_2022_2)の[流体力学計算のFortran+OpenACCによる実装例]を参考にOpenACC化してみましょう。
 
 ## コンパイル
+まずはフォートランコンパイラを使えるようにするにするため、以下のコマンドを実行します。
+
+    module load nvhpc
+    
 お手本のファイルをコンパイルしたいときは以下のようにしてください。
     
     make kh_ori.x
