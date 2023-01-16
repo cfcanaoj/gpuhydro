@@ -31,11 +31,11 @@ OpenACC化されたお手本のファイルとして`main_ori.f90`が用意さ�
     make kh_pra.x
     
 ## 実行
-OpenACC化できたら、テストしてみましょう。まずはお手本コードの場合。
+OpenACC化できたら、テストしてみましょう。まずはお手本コードの場合。ログは`log_ori.dat`に出力されます。
     
     sbatch sj_ori.sh
     
-次に練習コードの場合。
+次に練習コードの場合。ログは`log_pra.dat`に出力されます。
     
     sbatch sj_pra.sh
     
@@ -56,6 +56,6 @@ OpenACC化できたら、テストしてみましょう。まずはお手本コ�
 
 ## 計測
 `main_ori.f90`と`main_pra.f90`の中の以下のフラグを`.true.`にするとファイルをアウトプットするのをやめて時間が計測できます。`log_ori.dat`,`log_pra.dat`,をご確認ください。
-　　　　　
-　　　　      logical:: nooutput=.false.
-          
+    
+    logical:: nooutput=.false.
+    
