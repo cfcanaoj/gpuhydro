@@ -656,7 +656,7 @@
       use modbasic
       implicit none
       integer::i,j,k
-      character(20),parameter::dirname="snapshots/"
+      character(20),parameter::dirname="snapshots_pra/"
       character(40)::filename
       real(8),save::tout
       data tout / 0.0d0 / 
