@@ -14,7 +14,7 @@ After you login the server, `g00.cfca.nao.ac.jp`, perform the following command.
 
 	module load nvhpc
 	make
-	sbatch sj_g00.sh
+	sbatch sj_ori.sh
 
 ## How to see the results
 Let us move to analysis server.
@@ -22,8 +22,8 @@ Let us move to analysis server.
     ssh an10@cfca.nao.ac.jp
     cd /gwork0/<username>/gpuhydro/KHf90openaccc
     module load gnuplot
-    gnuplot dn2dx.plt
-    display figures/dnx00100.png
+    gnuplot dn2dx_ori.plt
+    display figures_ori/dnx00070.png
 
 ## Description of the problem
 
@@ -36,7 +36,7 @@ Run the code with profiler.
 
 In `sj_g00prof.sh' the profiler is called as follows. 
    
-   nsys profile -o khprof ./kh.x
+   nsys profile -o khprof ./kh_ori.x
    
 The profile data is summarized in `khprof.nsys-rep`.
 
