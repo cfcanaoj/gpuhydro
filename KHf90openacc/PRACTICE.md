@@ -22,6 +22,8 @@ OpenACC化されたお手本のファイルとして`main_ori.f90`が用意さ�
 
     module load nvhpc
     
+今回のようにOpenACCを使用するときにはコンパイルコマンドは`nvfortran -acc`を使用します。さらに`-Minfo=accel`というオプションもコンパイル時にGPUで実行するパートに関するメッセージがでるのでつけておきましょう。詳しくは`Makefile`を見て確認してください。
+
 お手本のファイルをコンパイルしたいときは以下のようにしてください。
     
     make kh_ori.x
