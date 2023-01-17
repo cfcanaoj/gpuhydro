@@ -18,11 +18,13 @@ OpenACC化されたお手本のファイルとして`main_ori.f90`が用意さ�
 こちらのファイルを開いて、[流体力学計算のFortran+OpenACCによる実装例](https://qiita.com/takiwaki_tomoya/items/af059b7fb8877f0e3d79)を参考にOpenACC化してみましょう。
 
 ## コンパイル
-まずはフォートランコンパイラを使えるようにするにするため、以下のコマンドを実行します。何度も使う場合は`.bashrc`に追加しておきましょう（`/home/skel/`に`.bash_profile`と`.bashrc`のサンプルがあります, backspaceがうまく動かないときは`stty erase '^H'`をコメントアウトしてください）。
+まずはフォートランコンパイラを使えるようにするにするため、以下のコマンドを実行します。
 
     module load nvhpc
     
-今回のようにOpenACCを使用するときにはコンパイルコマンドは`nvfortran -acc`を使用します。さらに`-Minfo=accel`というオプションもコンパイル時にGPUで実行するパートに関するメッセージがでるのでつけておきましょう。詳しくは`Makefile`を見て確認してください。
+何度も使う場合は`.bashrc`に追加しておきましょう（`/home/skel/`に`.bash_profile`と`.bashrc`のサンプルがあります, backspaceがうまく動かないときは`stty erase '^H'`をコメントアウトしてください）。
+
+今回のようにフォートランでOpenACCを使用するときにはコンパイルコマンドとして`nvfortran -acc`を使用します。さらに`-Minfo=accel`というオプションもコンパイル時にGPUで実行するパートに関するメッセージがでるのでつけておきましょう。詳しくは`Makefile`を見て確認してください。
 
 お手本のファイルをコンパイルしたいときは以下のようにしてください。
     
