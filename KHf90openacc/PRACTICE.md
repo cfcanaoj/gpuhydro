@@ -15,7 +15,7 @@ vpnを繋ぎ、`ssh`で`g00.cfca.nao.ac.jp`にログインします。以下`<us
 
 OpenACC化されたお手本のファイルとして`main_ori.f90`が用意されています。
 また、GPU化されてない練習用フォートランのファイルは`main_pra.f90`です。
-こちらのファイルを開いて、[流体力学計算のFortran+OpenACCによる実装例]を参考にOpenACC化してみましょう。
+こちらのファイルを開いて、[流体力学計算のFortran+OpenACCによる実装例](https://qiita.com/takiwaki_tomoya/items/af059b7fb8877f0e3d79)を参考にOpenACC化してみましょう。
 
 ## コンパイル
 まずはフォートランコンパイラを使えるようにするにするため、以下のコマンドを実行します。何度も使う場合は`.bashrc`に追加しておきましょう（`/home/skel/`に`.bash_profile`と`.bashrc`のサンプルがあります）。
