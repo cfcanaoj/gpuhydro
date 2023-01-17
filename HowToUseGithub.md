@@ -3,7 +3,7 @@
 To download the source code, you need an account of [github](https://github.com/).
 
 ## Make ssh key
-After you login one of cfca servers, e.g., `g00.cfca.nao.ac.jp`, first you need to make ssh keys. The password is required.
+After you login one of cfca servers, e.g., `g00.cfca.nao.ac.jp`, first you need to make ssh keys. You have to determine the password.
     
     ssh-keygen -t rsa -f .ssh/id_rsa_git
     
