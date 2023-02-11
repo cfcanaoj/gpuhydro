@@ -53,7 +53,7 @@
       use omp_lib
       implicit none
       real(8)::time_begin,time_end
-      logical,parameter::nooutput=.false.
+      logical,parameter::nooutput=.true.
       write(6,*) "setup grids and fiels"
       call GenerateGrid
       call GenerateProblem
@@ -242,7 +242,7 @@
       implicit none
       integer::i,j,k
       
-!$omp parallel do   
+!$omp parallel do
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -261,7 +261,7 @@
       enddo
       enddo
       enddo
-!$end omp parallel dot
+!$end omp parallel do
       return
       end subroutine PrimVariable
 
@@ -301,9 +301,8 @@
       implicit none
       integer::i,j,k
 
-!$acc kernels
       k=ks
-!$acc loop independent
+!$omp parallel do
       do j=1,jn-1
       do i=1,in-1
          svc(nden,i,j,k) =  d(i,j,k)
@@ -314,13 +313,12 @@
          svc(npre,i,j,k) = ei(i,j,k)*(gam-1.0d0)
       enddo
       enddo
-!$acc end kernels
+!$omp end parallel do
       
       return
       end subroutine StateVevtor
 
       subroutine minmod(a,b,d)
-!$acc routine seq
       use fluxmod, only : nhyd
       implicit none
       real(8),dimension(nhyd),intent(in)::a,b
@@ -337,7 +335,6 @@
 
 
       subroutine vanLeer(dvp,dvm,dv)
-!$acc routine seq
       use fluxmod, only : nhyd
       implicit none
       real(8),dimension(nhyd),intent(in)::dvp,dvm
@@ -357,7 +354,6 @@
       end subroutine vanLeer
 
       subroutine MClimiter(a,b,c,d)
-!$acc routine seq
       use fluxmod, only : nhyd
       implicit none
       real(8),dimension(nhyd),intent(in)::a,b,c
