@@ -5,7 +5,7 @@
       integer,parameter::nhymax=20000
       real(8)::time,dt
       data time / 0.0d0 /
-      integer,parameter::ngrid=500
+      integer,parameter::ngrid=150
       integer,parameter::mgn=2
       integer,parameter::in=ngrid+2*mgn+1 &
      &                  ,jn=ngrid+2*mgn+1 &
@@ -217,7 +217,7 @@
       use modbasic
       implicit none
       integer::i,j,k
-!$omp parallel do      
+!$omp parallel do collapse(3)
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -242,7 +242,7 @@
       implicit none
       integer::i,j,k
       
-!$omp parallel do
+!$omp parallel do collapse(3)
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -276,7 +276,7 @@
       integer::i,j,k
       dtmin=1.0d90
 
-!$omp parallel do reduction(min:dtmin) private(dtl1,dtl2,dtl3,dtlocal)      
+!$omp parallel do collapse(3) reduction(min:dtmin) private(dtl1,dtl2,dtl3,dtlocal)      
       do k=ks,ke
       do j=js,je
       do i=is,ie
@@ -300,9 +300,8 @@
       use fluxmod
       implicit none
       integer::i,j,k
-
-      k=ks
-!$omp parallel do
+!$omp parallel do collapse(3)
+      do k=ks,ke
       do j=1,jn-1
       do i=1,in-1
          svc(nden,i,j,k) =  d(i,j,k)
@@ -311,6 +310,7 @@
          svc(nve3,i,j,k) = v3(i,j,k)
          svc(nene,i,j,k) = ei(i,j,k)/d(i,j,k)
          svc(npre,i,j,k) = ei(i,j,k)*(gam-1.0d0)
+      enddo
       enddo
       enddo
 !$omp end parallel do
@@ -373,29 +373,35 @@
       use modbasic, only: is,ie,in,js,je,jn,ks,ke,kn,gam
       use fluxmod
       implicit none
-      integer::i,j,k
-      real(8),dimension(nhyd):: dsvp,dsvm,dsvc,dsv
+      integer::i,j,k,n
+      real(8),dimension(nhyd):: dsvp,dsvm,dsv
       real(8),dimension(nhyd,in,jn,kn):: leftpr,rigtpr
       real(8),dimension(2*mflx+madd,in,jn,kn):: leftco,rigtco
       real(8),dimension(2*mflx+madd):: leftst,rigtst
       real(8),dimension(mflx):: nflux
 
-      k=ks
-!$omp parallel do  private(dsv,dsvp,dsvm)
+!$omp parallel do collapse(3) private(dsv,dsvp,dsvm) 
+      do k=ks,ke
       do j=js,je
       do i=is-1,ie+1
-         dsvp(:) = (svc(:,i+1,j,k) -svc(:,i,j,k)                 )
-         dsvm(:) = (                svc(:,i,j,k) - svc(:,i-1,j,k))
+        do n=1,nhyd
+         dsvp(n) = (svc(n,i+1,j,k) -svc(n,i,j,k)                 )
+         dsvm(n) = (                svc(n,i,j,k) - svc(n,i-1,j,k))
+        enddo
 
          call vanLeer(dsvp,dsvm,dsv)
 !         call minmod(dsvp,dsvm,dsv)
-         leftpr(:,i+1,j,k) = svc(:,i,j,k) + 0.5d0*dsv(:)
-         rigtpr(:,i  ,j,k) = svc(:,i,j,k) - 0.5d0*dsv(:)
+         do n=1,nhyd
+            leftpr(n,i+1,j,k) = svc(n,i,j,k) + 0.5d0*dsv(n)
+            rigtpr(n,i  ,j,k) = svc(n,i,j,k) - 0.5d0*dsv(n)
+         enddo
+      enddo
       enddo
       enddo
 !$omp end parallel do
 
-!$omp parallel do
+!$omp parallel do collapse(3)
+      do k=ks,ke
       do j=js,je
       do i=is,ie+1
          leftco(mudn,i,j,k)=leftpr(nden,i,j,k) ! rho
@@ -455,9 +461,11 @@
 
       enddo
       enddo
+      enddo 
 !$omp end parallel do
 
-!$omp parallel do private(leftst,rigtst,nflux)
+!$omp parallel do collapse(3) private(leftst,rigtst,nflux) 
+      do k=ks,ke
       do j=js,je
       do i=is,ie+1
          leftst(:)=leftco(:,i,j,k)
@@ -469,6 +477,8 @@
          nflux1(mrv3,i,j,k)=nflux(mrvw)
          nflux1(meto,i,j,k)=nflux(meto)
       enddo
+      enddo
+
       enddo
 !$omp end parallel do
       
@@ -485,9 +495,9 @@
       real(8),dimension(2*mflx+madd,in,jn,kn):: leftco,rigtco
       real(8),dimension(2*mflx+madd):: leftst,rigtst
       real(8),dimension(mflx):: nflux
-      k=ks
 
-!$omp parallel do private(dsv,dsvp,dsvm)
+!$omp parallel do collapse(3) private(dsv,dsvp,dsvm)
+      do k=ks,ke
       do i=is,ie
       do j=js-1,je+1
          dsvp(:) = (svc(:,i,j+1,k) -svc(:,i,j,k)                 )
@@ -501,12 +511,13 @@
 !         leftpr(:,i,j,k) = svc(:,i,j-1,k)
 !         rigtpr(:,i,j,k) = svc(:,i,j  ,k)
 
-       enddo
-       enddo
+     enddo
+     enddo
+     enddo
 !$omp end parallel do
 
-      k=ks
-!$omp parallel do
+!$omp parallel do collapse(3)
+      do k=ks,ke
       do i=is,ie
       do j=js,je+1
          leftco(mudn,i,j,k)=leftpr(nden,i,j,k)
@@ -566,10 +577,11 @@
 
       enddo
       enddo
+      enddo
 !$omp end parallel do
 
-      k=ks
-!$omp parallel do private(leftst,rigtst,nflux)
+!$omp parallel do collapse(3) private(leftst,rigtst,nflux)
+      do k=ks,ke
       do i=is,ie
       do j=js,je+1
          leftst(:)=leftco(:,i,j,k)
@@ -580,6 +592,7 @@
          nflux2(mrv2,i,j,k)=nflux(mrvu) ! mrv2=3, mrvu=2
          nflux2(mrv3,i,j,k)=nflux(mrvv)
          nflux2(meto,i,j,k)=nflux(meto)
+      enddo
       enddo
       enddo
 !$omp end parallel do
@@ -622,7 +635,7 @@
       implicit none
       integer::i,j,k
 
-!$omp parallel do
+!$omp parallel do collapse(3)
       do k=ks,ke
       do j=js,je
       do i=is,ie

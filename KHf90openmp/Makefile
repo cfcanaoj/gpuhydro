@@ -8,8 +8,9 @@ all: ${exe}
 ##################################
 # setup for CfCA XC50 begin
 ##################################
-fc= ftn
-foptopenmp = -qopenmp
+fc= ifort -mcmodel=medium
+foptopenmp = -qopenmp -qopt-report=5
+#foptopenmp = -parallel
 fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
