@@ -1,4 +1,4 @@
-module mpipara
+module mpimod
   use mpi
   implicit none
   integer, parameter :: mreq  = 300
@@ -70,4 +70,4 @@ subroutine FinalizeMPI
   call MPI_FINALIZE(ierr)
 end subroutine FinalizeMPI
 
-end module  mpipara
+end module  mpimod

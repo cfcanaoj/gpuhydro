@@ -1,66 +1,67 @@
 
-      module modbasic
-      implicit none
-      integer::nhy
-      integer,parameter::nhymax=20000
-      real(8)::time,dt
-      data time / 0.0d0 /
-      integer,parameter::ngrid=150
-      integer,parameter::mgn=2
-      integer,parameter::in=ngrid+2*mgn+1 &
-     &                  ,jn=ngrid+2*mgn+1 &
-     &                  ,kn=1
-      integer,parameter::is=mgn+1 &
-     &                  ,js=mgn+1 &
-     &                  ,ks=1
-      integer,parameter::ie=ngrid+mgn &
-     &                  ,je=ngrid+mgn &
-     &                  ,ke=1
+module basicmod
+  implicit none
+  integer::nhy
+  integer,parameter::nhymax=20000
+  real(8)::time,dt
+  data time / 0.0d0 /
+  integer,parameter::ngrid=250
+  integer,parameter::mgn=2
+  integer,parameter::in=ngrid+2*mgn+1 &
+ &                  ,jn=ngrid+2*mgn+1 &
+ &                  ,kn=1
+  integer,parameter::is=mgn+1 &
+ &                  ,js=mgn+1 &
+ &                  ,ks=1
+  integer,parameter::ie=ngrid+mgn &
+ &                  ,je=ngrid+mgn &
+ &                  ,ke=1
 
-      real(8),parameter:: x1min=-0.5d0,x1max=0.5d0
-      real(8),parameter:: x2min=-0.5d0,x2max=0.5d0
-      real(8),dimension(in)::x1a,x1b
-      real(8),dimension(jn)::x2a,x2b
-      real(8),dimension(kn)::x3a,x3b
-
-      real(8),dimension(in,jn,kn)::d,et,mv1,mv2,mv3
-      real(8),dimension(in,jn,kn)::p,ei,v1,v2,v3,cs
-
-      real(8),parameter::gam=5.0d0/3.0d0
-
-      end module modbasic
+  real(8),parameter:: x1min=-0.5d0,x1max=0.5d0
+  real(8),parameter:: x2min=-0.5d0,x2max=0.5d0
+  real(8),dimension(in)::x1a,x1b
+  real(8),dimension(jn)::x2a,x2b
+  real(8),dimension(kn)::x3a,x3b
+  
+  real(8),dimension(in,jn,kn)::d,et,mv1,mv2,mv3
+  real(8),dimension(in,jn,kn)::p,ei,v1,v2,v3,cs
+  
+  real(8),parameter::gam=5.0d0/3.0d0
+  
+  integer,parameter::nbc=5
+end module basicmod
       
-      module fluxmod
-      use modbasic, only : in,jn,kn
-      implicit none
-      integer,parameter::nden=1,nve1=2,nve2=3,nve3=4,nene=5,npre=6
-      integer,parameter::nhyd=6
-      real(8),dimension(nhyd,in,jn,kn):: svc
+module fluxmod
+  use basicmod, only : in,jn,kn
+  implicit none
+  integer,parameter::nden=1,nve1=2,nve2=3,nve3=4,nene=5,npre=6
+  integer,parameter::nhyd=6
+  real(8),dimension(nhyd,in,jn,kn):: svc
+  
+  integer,parameter::mudn=1,muvu=2,muvv=3,muvw=4,muet=5   &
+ &                  ,mfdn=6,mfvu=7,mfvv=8,mfvw=9,mfet=10  &
+ &                  ,mcsp=11,mvel=12,mpre=13
+  integer,parameter:: mflx=5,madd=3
 
-      integer,parameter::mudn=1,muvu=2,muvv=3,muvw=4,muet=5   &
-     &                  ,mfdn=6,mfvu=7,mfvv=8,mfvw=9,mfet=10  &
-     &                  ,mcsp=11,mvel=12,mpre=13
-      integer,parameter:: mflx=5,madd=3
-
-      integer,parameter:: mden=1,mrv1=2,mrv2=3,mrv3=4,meto=5  &
-     &                          ,mrvu=muvu,mrvv=muvv,mrvw=muvw
-      real(8),dimension(mflx,in,jn,kn):: nflux1,nflux2,nflux3
+  integer,parameter:: mden=1,mrv1=2,mrv2=3,mrv3=4,meto=5  &
+ &                          ,mrvu=muvu,mrvv=muvv,mrvw=muvw
+  real(8),dimension(mflx,in,jn,kn):: nflux1,nflux2,nflux3
       
-      end module fluxmod
+end module fluxmod
 
       program main
-      use modbasic
+      use basicmod
       use omp_lib
-      use mpipara
+      use mpimod
       implicit none
       real(8)::time_begin,time_end
       logical,parameter::nooutput=.true.
       call InitializeMPI
-      write(6,*) "setup grids and fiels"
+      if(myid_w == 0) print *, "setup grids and fiels"
       call GenerateGrid
       call GenerateProblem
       call ConsvVariable
-      write(6,*) "entering main loop"
+      if(myid_w == 0) write(6,*) "entering main loop"
 ! main loop
       time_begin = omp_get_wtime()
       do nhy=1,nhymax
@@ -77,14 +78,15 @@
       enddo
       time_end = omp_get_wtime()
 
-      print *, "sim time [s]:", time_end-time_begin
-      print *, "time/count/cell", (time_end-time_begin)/(ngrid**2)/nhymax
+      if(myid_w == 0) print *, "sim time [s]:", time_end-time_begin
+      if(myid_w == 0) print *, "time/count/cell", (time_end-time_begin)/(ngrid**2)/nhymax
 
-      write(6,*) "program has been finished"
+      call FinalizeMPI
+      print *, "program has been finished"
       end program main
 
       subroutine GenerateGrid
-      use modbasic
+      use basicmod
       implicit none
       real(8)::dx,dy
       integer::i,j,k
@@ -108,7 +110,7 @@
       end subroutine GenerateGrid
 
       subroutine GenerateProblem
-      use modbasic
+      use basicmod
       implicit none
       integer::i,j,k
       real(8) :: rho1,rho2,Lsm,u1,u2
@@ -164,59 +166,183 @@
       end subroutine GenerateProblem
 
 subroutine BoundaryCondition
-  use mpipara
-  use modbasic
+  use basicmod
   implicit none
+  real(8),dimension(mgn,jn,kn,nbc):: varsendXstt,varsendXend
+  real(8),dimension(in,mgn,kn,nbc):: varsendYstt,varsendYend
+  real(8),dimension(mgn,jn,kn,nbc):: varrecvXstt,varrecvXend
+  real(8),dimension(in,mgn,kn,nbc):: varrecvYstt,varrecvYend
   integer::i,j,k
-  k=ks
-  do j=1,jn-1
-  do i=1,mgn
-      d(i,j,k) =  d(ie-mgn+i,j,k)
-     ei(i,j,k) = ei(ie-mgn+i,j,k)
-     v1(i,j,k) = v1(ie-mgn+i,j,k)
-     v2(i,j,k) = v2(ie-mgn+i,j,k)
-     v3(i,j,k) = v3(ie-mgn+i,j,k)
-  enddo
-  enddo
 
   k=ks
   do j=1,jn-1
   do i=1,mgn
-      d(ie+i,j,k) =  d(is+i-1,j,k)
-     ei(ie+i,j,k) = ei(is+i-1,j,k)
-     v1(ie+i,j,k) = v1(is+i-1,j,k)
-     v2(ie+i,j,k) = v2(is+i-1,j,k)
-     v3(ie+i,j,k) = v3(is+i-1,j,k)
-  enddo
-  enddo
-     
-  k=ks
-  do i=1,in-1
-  do j=1,mgn
-     d(i,j,k) =  d(i,je-mgn+j,k)
-     ei(i,j,k) = ei(i,je-mgn+j,k)
-     v1(i,j,k) = v1(i,je-mgn+j,k)
-     v2(i,j,k) = v2(i,je-mgn+j,k)
-     v3(i,j,k) = v3(i,je-mgn+j,k)
+     varsendXend(i,j,k,1) =  d(ie-mgn+i,j,k)
+     varsendXend(i,j,k,2) = ei(ie-mgn+i,j,k)
+     varsendXend(i,j,k,3) = v1(ie-mgn+i,j,k)
+     varsendXend(i,j,k,4) = v2(ie-mgn+i,j,k)
+     varsendXend(i,j,k,5) = v3(ie-mgn+i,j,k)
+
+     varsendXstt(i,j,k,1) =  d(  is+i-1,j,k)
+     varsendXstt(i,j,k,2) = ei(  is+i-1,j,k)
+     varsendXstt(i,j,k,3) = v1(  is+i-1,j,k)
+     varsendXstt(i,j,k,4) = v2(  is+i-1,j,k)
+     varsendXstt(i,j,k,5) = v3(  is+i-1,j,k)
   enddo
   enddo
 
   k=ks
   do i=1,in-1
   do j=1,mgn
-     d(i,je+j,k) =  d(i,js+j-1,k)
-     ei(i,je+j,k) = ei(i,js+j-1,k)
-     v1(i,je+j,k) = v1(i,js+j-1,k)
-     v2(i,je+j,k) = v2(i,js+j-1,k)
-     v3(i,je+j,k) = v3(i,js+j-1,k)
+     varsendYend(i,j,k,1) =  d(i,je-mgn+j,k)
+     varsendYend(i,j,k,2) = ei(i,je-mgn+j,k)
+     varsendYend(i,j,k,3) = v1(i,je-mgn+j,k)
+     varsendYend(i,j,k,4) = v2(i,je-mgn+j,k)
+     varsendYend(i,j,k,5) = v3(i,je-mgn+j,k)
+
+     varsendYstt(i,j,k,1) =  d(i,  js+j-1,k)
+     varsendYstt(i,j,k,2) = ei(i,  js+j-1,k)
+     varsendYstt(i,j,k,3) = v1(i,  js+j-1,k)
+     varsendYstt(i,j,k,4) = v2(i,  js+j-1,k)
+     varsendYstt(i,j,k,5) = v3(i,  js+j-1,k)
+  enddo
+  enddo
+
+
+  call XbcSendRecv(varsendXstt,varsendXend,varrecvXstt,varrecvXend)
+  k=ks
+  do j=1,jn-1
+  do i=1,mgn
+      d(i,j,k) = varrecvXend(i,j,k,1)
+     ei(i,j,k) = varrecvXend(i,j,k,2)
+     v1(i,j,k) = varrecvXend(i,j,k,3)
+     v2(i,j,k) = varrecvXend(i,j,k,4)
+     v3(i,j,k) = varrecvXend(i,j,k,5)
+  enddo
+  enddo
+
+  k=ks
+  do j=1,jn-1
+  do i=1,mgn
+      d(ie+i,j,k) = varrecvXstt(i,j,k,1)
+     ei(ie+i,j,k) = varrecvXstt(i,j,k,2)
+     v1(ie+i,j,k) = varrecvXstt(i,j,k,3)
+     v2(ie+i,j,k) = varrecvXstt(i,j,k,4)
+     v3(ie+i,j,k) = varrecvXstt(i,j,k,5)
+  enddo
+  enddo
+
+  call YbcSendRecv(varsendYstt,varsendYend,varrecvYstt,varrecvYend)
+
+  k=ks
+  do i=1,in-1
+  do j=1,mgn
+      d(i,j,k) = varrecvYstt(i,j,k,1)
+     ei(i,j,k) = varrecvYstt(i,j,k,2)
+     v1(i,j,k) = varrecvYstt(i,j,k,3)
+     v2(i,j,k) = varrecvYstt(i,j,k,4)
+     v3(i,j,k) = varrecvYstt(i,j,k,5)
+  enddo
+  enddo
+
+  k=ks
+  do i=1,in-1
+  do j=1,mgn
+      d(i,je+j,k) = varrecvYend(i,j,k,1)
+     ei(i,je+j,k) = varrecvYend(i,j,k,2)
+     v1(i,je+j,k) = varrecvYend(i,j,k,3)
+     v2(i,je+j,k) = varrecvYend(i,j,k,4)
+     v3(i,je+j,k) = varrecvYend(i,j,k,5)
   enddo
   enddo
 
   return
 end subroutine BoundaryCondition
 
+subroutine XbcSendRecv(varsendXstt,varsendXend,varrecvXstt,varrecvXend)
+  use   mpimod
+  use basicmod
+  use mpi
+  implicit none
+  real(8),dimension(mgn,jn,kn,nbc),intent(in) ::varsendXstt,varsendXend
+  real(8),dimension(mgn,jn,kn,nbc),intent(out)::varrecvXstt,varrecvXend
+  
+  if(ntiles(1) == 1) then
+     varrecvXstt(:,:,:,:) = varsendXend(:,:,:,:)
+     varrecvXend(:,:,:,:) = varsendXstt(:,:,:,:)
+  else
+
+     nreq = nreq + 1         
+     call MPI_IRECV(varrecvXstt,mgn*jn*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n1m,1100, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_ISEND(varsendXstt,mgn*jn*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n1m, 1200, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_IRECV(varrecvXend,mgn*jn*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n1p,1200, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_ISEND(varsendXend,mgn*jn*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n1p, 1100, comm3d, req(nreq), ierr)
+
+     if(nreq .ne. 0) call MPI_WAITALL ( nreq, req, stat, ierr )
+     nreq = 0
+
+  endif
+
+  return
+end subroutine XbcSendRecv
+
+subroutine YbcSendRecv(varsendYstt,varsendYend,varrecvYstt,varrecvYend)
+  use   mpimod
+  use basicmod
+  use mpi
+  implicit none
+  real(8),dimension(in,mgn,kn,nbc),intent(in) ::varsendYstt,varsendYend
+  real(8),dimension(in,mgn,kn,nbc),intent(out)::varrecvYstt,varrecvYend
+
+  if(ntiles(2) == 1) then
+     varrecvYstt(:,:,:,:) = varsendYend(:,:,:,:)
+     varrecvYend(:,:,:,:) = varsendYstt(:,:,:,:)
+  else
+
+     nreq = nreq + 1         
+     call MPI_IRECV(varrecvYstt,mgn*in*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n2m, 2100, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_ISEND(varsendYstt,mgn*in*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n2m, 2200, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_IRECV(varrecvYend,mgn*in*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n2p,2200, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_ISEND(varsendYend,mgn*in*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n2p, 2100, comm3d, req(nreq), ierr)
+
+     if(nreq .ne. 0) call MPI_WAITALL ( nreq, req, stat, ierr )
+     nreq = 0
+  endif
+
+  return
+end subroutine YbcSendRecv
+
+
       subroutine ConsvVariable
-      use modbasic
+      use basicmod
       implicit none
       integer::i,j,k
 !$omp parallel do collapse(3)
@@ -240,7 +366,7 @@ end subroutine BoundaryCondition
       end subroutine Consvvariable
 
       subroutine PrimVariable
-      use modbasic
+      use basicmod
       implicit none
       integer::i,j,k
       
@@ -268,7 +394,7 @@ end subroutine BoundaryCondition
       end subroutine PrimVariable
 
       subroutine TimestepControl
-      use modbasic
+      use basicmod
       implicit none
       real(8)::dtl1
       real(8)::dtl2
@@ -298,7 +424,7 @@ end subroutine BoundaryCondition
       end subroutine TimestepControl
 
       subroutine StateVevtor
-      use modbasic
+      use basicmod
       use fluxmod
       implicit none
       integer::i,j,k
@@ -372,7 +498,7 @@ end subroutine BoundaryCondition
       end subroutine MClimiter
 
       subroutine NumericalFlux1
-      use modbasic, only: is,ie,in,js,je,jn,ks,ke,kn,gam
+      use basicmod, only: is,ie,in,js,je,jn,ks,ke,kn,gam
       use fluxmod
       implicit none
       integer::i,j,k,n
@@ -488,7 +614,7 @@ end subroutine BoundaryCondition
       end subroutine Numericalflux1
 
       subroutine NumericalFlux2
-      use modbasic, only: is,ie,in,js,je,jn,ks,ke,kn,gam
+      use basicmod, only: is,ie,in,js,je,jn,ks,ke,kn,gam
       use fluxmod
       implicit none
       integer::i,j,k
@@ -632,7 +758,7 @@ end subroutine BoundaryCondition
       end subroutine HLLE
 
       subroutine UpdateConsv
-      use modbasic
+      use basicmod
       use fluxmod
       implicit none
       integer::i,j,k
@@ -690,7 +816,7 @@ end subroutine BoundaryCondition
       end subroutine UpdateConsv
 
       subroutine Output
-      use modbasic
+      use basicmod
       implicit none
       integer::i,j,k
       character(20),parameter::dirname="snapshots/"

@@ -8,14 +8,26 @@ all: ${exe}
 ##################################
 # setup for CfCA XC50 begin
 ##################################
-fc= ifort -mcmodel=medium
-foptopenmp = -qopenmp -qopt-report=5
-#foptopenmp = -parallel
+fc= ftn
+foptopenmp = -qopenmp
 fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
 # setup for CfCA XC50 end
 ##################################
+
+##################################
+# setup for CfCA more begin
+##################################
+#fc= ftn
+#foptopenmp = -qopenmp
+#foptopenmp = -parallel
+#fopt = -g -traceback -O2
+#fopt=-g -traceback -check all -fpe0
+
+# setup for CfCA more end
+##################################
+
 
 ##################################
 # setup for Fugaku
@@ -26,14 +38,19 @@ fopt = -g -traceback -O2
 # setup for Fugaku end
 ##################################
 
-mpiroutines.o: mpiroutines.f90 
-	${fc} ${fopt} ${foptopenmp} -c $< -o mpirompiroutines.o
 
-main.o: main.f90 
-	${fc} ${fopt} ${foptopenmp} -c $< -o main.o
+.SUFFIXES: .f90 .o
 
-${exe}: main.o mpiroutines.o
-	${fc} ${fopt} ${foptopenmp} main.o mpirompiroutines.o -o ${exe}
+.f90.o: 
+	${fc} ${fopt} ${foptopenmp} -c $< 
+
+OBJS=main.o mpiroutines.o
+
+mpiroutines.o:
+main.o: main.f90 mpiroutines.o 
+
+${exe}: ${OBJS}
+	${fc} ${fopt} ${foptopenmp} ${OBJS} -o ${exe}
 
 #################
 # clean up
