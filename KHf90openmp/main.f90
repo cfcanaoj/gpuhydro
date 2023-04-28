@@ -51,9 +51,11 @@
       program main
       use modbasic
       use omp_lib
+      use mpipara
       implicit none
       real(8)::time_begin,time_end
       logical,parameter::nooutput=.true.
+      call InitializeMPI
       write(6,*) "setup grids and fiels"
       call GenerateGrid
       call GenerateProblem
@@ -75,8 +77,8 @@
       enddo
       time_end = omp_get_wtime()
 
-      write(6,*) "sim time [s]:", time_end-time_begin
-      write(6,*) "time/count/cell", (time_end-time_begin)/(ngrid**2)/nhymax
+      print *, "sim time [s]:", time_end-time_begin
+      print *, "time/count/cell", (time_end-time_begin)/(ngrid**2)/nhymax
 
       write(6,*) "program has been finished"
       end program main
@@ -161,57 +163,57 @@
       return
       end subroutine GenerateProblem
 
-      subroutine BoundaryCondition
-      use modbasic
-      implicit none
-      integer::i,j,k
-      
-      k=ks
-      do j=1,jn-1
-      do i=1,mgn
-           d(i,j,k) =  d(ie-mgn+i,j,k)
-          ei(i,j,k) = ei(ie-mgn+i,j,k)
-          v1(i,j,k) = v1(ie-mgn+i,j,k)
-          v2(i,j,k) = v2(ie-mgn+i,j,k)
-          v3(i,j,k) = v3(ie-mgn+i,j,k)
-      enddo
-      enddo
+subroutine BoundaryCondition
+  use mpipara
+  use modbasic
+  implicit none
+  integer::i,j,k
+  k=ks
+  do j=1,jn-1
+  do i=1,mgn
+      d(i,j,k) =  d(ie-mgn+i,j,k)
+     ei(i,j,k) = ei(ie-mgn+i,j,k)
+     v1(i,j,k) = v1(ie-mgn+i,j,k)
+     v2(i,j,k) = v2(ie-mgn+i,j,k)
+     v3(i,j,k) = v3(ie-mgn+i,j,k)
+  enddo
+  enddo
 
-      k=ks
-      do j=1,jn-1
-      do i=1,mgn
-           d(ie+i,j,k) =  d(is+i-1,j,k)
-          ei(ie+i,j,k) = ei(is+i-1,j,k)
-          v1(ie+i,j,k) = v1(is+i-1,j,k)
-          v2(ie+i,j,k) = v2(is+i-1,j,k)
-          v3(ie+i,j,k) = v3(is+i-1,j,k)
-      enddo
-      enddo
+  k=ks
+  do j=1,jn-1
+  do i=1,mgn
+      d(ie+i,j,k) =  d(is+i-1,j,k)
+     ei(ie+i,j,k) = ei(is+i-1,j,k)
+     v1(ie+i,j,k) = v1(is+i-1,j,k)
+     v2(ie+i,j,k) = v2(is+i-1,j,k)
+     v3(ie+i,j,k) = v3(is+i-1,j,k)
+  enddo
+  enddo
+     
+  k=ks
+  do i=1,in-1
+  do j=1,mgn
+     d(i,j,k) =  d(i,je-mgn+j,k)
+     ei(i,j,k) = ei(i,je-mgn+j,k)
+     v1(i,j,k) = v1(i,je-mgn+j,k)
+     v2(i,j,k) = v2(i,je-mgn+j,k)
+     v3(i,j,k) = v3(i,je-mgn+j,k)
+  enddo
+  enddo
 
-      k=ks
-      do i=1,in-1
-      do j=1,mgn
-           d(i,j,k) =  d(i,je-mgn+j,k)
-          ei(i,j,k) = ei(i,je-mgn+j,k)
-          v1(i,j,k) = v1(i,je-mgn+j,k)
-          v2(i,j,k) = v2(i,je-mgn+j,k)
-          v3(i,j,k) = v3(i,je-mgn+j,k)
-      enddo
-      enddo
+  k=ks
+  do i=1,in-1
+  do j=1,mgn
+     d(i,je+j,k) =  d(i,js+j-1,k)
+     ei(i,je+j,k) = ei(i,js+j-1,k)
+     v1(i,je+j,k) = v1(i,js+j-1,k)
+     v2(i,je+j,k) = v2(i,js+j-1,k)
+     v3(i,je+j,k) = v3(i,js+j-1,k)
+  enddo
+  enddo
 
-      k=ks
-      do i=1,in-1
-      do j=1,mgn
-           d(i,je+j,k) =  d(i,js+j-1,k)
-          ei(i,je+j,k) = ei(i,js+j-1,k)
-          v1(i,je+j,k) = v1(i,js+j-1,k)
-          v2(i,je+j,k) = v2(i,js+j-1,k)
-          v3(i,je+j,k) = v3(i,js+j-1,k)
-      enddo
-      enddo
-
-      return
-      end subroutine BoundaryCondition
+  return
+end subroutine BoundaryCondition
 
       subroutine ConsvVariable
       use modbasic

@@ -16,7 +16,6 @@ module mpipara
 
 contains
 subroutine InitializeMPI
-  use mpi
   implicit none
   integer::key,color
   integer::np_hyd
@@ -32,7 +31,11 @@ subroutine InitializeMPI
   periodic(1)=.true.
   periodic(2)=.true.
   periodic(3)=.true.
- 
+  if(myid_w == 0) then
+     print *, "MPI process=",nprocs_w
+     print *, "decomposition=",ntiles(1),ntiles(2),ntiles(3)
+  endif
+
   call MPI_BCAST(ntiles,3,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
   call MPI_BCAST(periodic,3,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
 
@@ -61,5 +64,10 @@ subroutine InitializeMPI
       
   return
 end subroutine InitializeMPI
+
+subroutine FinalizeMPI
+  implicit none
+  call MPI_FINALIZE(ierr)
+end subroutine FinalizeMPI
 
 end module  mpipara
