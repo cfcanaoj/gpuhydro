@@ -26,8 +26,14 @@ fopt = -g -traceback -O2
 # setup for Fugaku end
 ##################################
 
-${exe}: main.f90
-	${fc} ${fopt} ${foptopenmp} $< -o ${exe}
+mpiroutines.o: mpiroutines.f90 
+	${fc} ${fopt} ${foptopenmp} -c $< -o mpirompiroutines.o
+
+main.o: main.f90 
+	${fc} ${fopt} ${foptopenmp} -c $< -o main.o
+
+${exe}: main.o mpiroutines.o
+	${fc} ${fopt} ${foptopenmp} main.o mpirompiroutines.o -o ${exe}
 
 #################
 # clean up
