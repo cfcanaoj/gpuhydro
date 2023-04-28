@@ -8,9 +8,9 @@ all: ${exe}
 ##################################
 # setup for CfCA XC50 begin
 ##################################
-fc= ftn
-foptopenmp = -qopenmp
-fopt = -g -traceback -O2
+#fc= ftn
+#foptopenmp = -qopenmp
+#fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
 # setup for CfCA XC50 end
@@ -19,10 +19,9 @@ fopt = -g -traceback -O2
 ##################################
 # setup for CfCA more begin
 ##################################
-#fc= ftn
-#foptopenmp = -qopenmp
-#foptopenmp = -parallel
-#fopt = -g -traceback -O2
+fc= mpiifort
+foptopenmp = -qopenmp
+fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
 # setup for CfCA more end
