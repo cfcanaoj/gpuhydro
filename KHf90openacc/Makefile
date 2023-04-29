@@ -1,22 +1,32 @@
 dird := snapshots
 
-exeori=kh_ori.x
-exepra=kh_pra.x
+exe := kh.x
 
-all: ${exeori} ${exepra}
+all: ${exe}
 
 .PHONY: all clean allclean
 
-fc= nvfortran
+##################################
+# setup for CfCA g00
+##################################
+fc= mpif90
 foptopenacc = -Minfo=accel -acc
 fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
+##################################
 
-${exeori}: main_ori.f90
-	${fc} ${fopt} ${foptopenacc} $< -o ${exeori}
+.SUFFIXES: .f90 .o
 
-${exepra}: main_pra.f90
-	${fc} ${fopt} ${foptopenacc} $< -o ${exepra}
+.f90.o: 
+	${fc} ${fopt} ${foptopenacc} -c $< 
+
+OBJS=main.o mpiroutines.o
+
+mpiroutines.o:
+main.o: main.f90 mpiroutines.o 
+
+${exe}: ${OBJS}
+	${fc} ${fopt} ${foptopenacc} ${OBJS} -o ${exe}
 
 #################
 # clean up
@@ -25,4 +35,4 @@ clean:
 	rm -f ${exe} *.o *.mod *~
 
 allclean:
-	rm -f ${dirm}/*.wmv ${dirf}/*.png ${dird}/*.xss
+	rm -f ${dird}/*.xss
