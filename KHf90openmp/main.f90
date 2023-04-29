@@ -855,7 +855,7 @@ end subroutine YbcSendRecv
       endif
       if(time .lt. tout+dtout) return
 
-      write(filename,'(a2,3(i2.2),a1,i5.5,a4)')"Sc",coords(1),coords(2),coords(3),"-",nout,".xss"
+      write(filename,'(a2,3(i2.2),a1,i5.5,a4)')"snap",coords(1),coords(2),coords(3),"-",nout,".xss"
       filename = trim(dirname)//filename
       open(unitout,file=filename,status='replace',form='formatted') 
 
