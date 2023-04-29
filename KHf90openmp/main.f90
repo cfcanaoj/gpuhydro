@@ -49,65 +49,83 @@ module fluxmod
       
 end module fluxmod
 
-      program main
-      use basicmod
-      use omp_lib
-      use mpimod
-      implicit none
-      real(8)::time_begin,time_end
-      logical,parameter::nooutput=.true.
-      call InitializeMPI
-      if(myid_w == 0) print *, "setup grids and fiels"
-      call GenerateGrid
-      call GenerateProblem
-      call ConsvVariable
-      if(myid_w == 0) write(6,*) "entering main loop"
+program main
+  use basicmod
+  use omp_lib
+  use mpimod
+  implicit none
+  real(8)::time_begin,time_end
+  integer::threadsnum
+  logical,parameter::nooutput=.false.
+  call InitializeMPI
+  threadsnum = omp_get_max_threads()
+  if(myid_w == 0) print *, "threads=",threadsnum
+  if(myid_w == 0) print *, "setup grids and fiels"
+  call GenerateGrid
+  call GenerateProblem
+  call ConsvVariable
+  if(myid_w == 0) print *, "entering main loop"
 ! main loop
-      time_begin = omp_get_wtime()
-      do nhy=1,nhymax
-         if(mod(nhy,100) .eq. 0 .and. .not. nooutput)write(6,*)nhy,time,dt
-         call TimestepControl
-         call BoundaryCondition
-         call StateVevtor
-         call NumericalFlux1
-         call NumericalFlux2
-         call UpdateConsv
-         call PrimVariable
-         time=time+dt
-         if(.not. nooutput)call Output
-      enddo
-      time_end = omp_get_wtime()
+  time_begin = omp_get_wtime()
+  do nhy=1,nhymax
+     if(mod(nhy,100) .eq. 0 .and. .not. nooutput .and. myid_w == 0) print *, nhy,time,dt
+     call TimestepControl
+     call BoundaryCondition
+     call StateVevtor
+     call NumericalFlux1
+     call NumericalFlux2
+     call UpdateConsv
+     call PrimVariable
+     time=time+dt
+     if(.not. nooutput)call Output
+  enddo
+  time_end = omp_get_wtime()
+  
+  if(myid_w == 0) print *, "sim time [s]:", time_end-time_begin
+  if(myid_w == 0) print *, "time/count/cell", (time_end-time_begin)/(ngrid**2)/nhymax
+  
+  call FinalizeMPI
+  if(myid_w == 0) print *, "program has been finished"
+end program main
 
-      if(myid_w == 0) print *, "sim time [s]:", time_end-time_begin
-      if(myid_w == 0) print *, "time/count/cell", (time_end-time_begin)/(ngrid**2)/nhymax
+subroutine GenerateGrid
+  use basicmod
+  use mpimod
+  implicit none
+  real(8)::dx,dy
+  real(8)::x1minloc,x1maxloc
+  real(8)::x2minloc,x2maxloc
+  integer::i,j,k
 
-      call FinalizeMPI
-      print *, "program has been finished"
-      end program main
+  x1minloc = x1min + (x1max-x1min)/ntiles(1)* coords(1)
+  x1maxloc = x1min + (x1max-x1min)/ntiles(1)*(coords(1)+1)
 
-      subroutine GenerateGrid
-      use basicmod
-      implicit none
-      real(8)::dx,dy
-      integer::i,j,k
-      dx=(x1max-x1min)/ngrid
-      do i=1,in
-         x1a(i) = dx*(i-(mgn+1))+x1min
-      enddo
-      do i=1,in-1
-         x1b(i) = 0.5d0*(x1a(i+1)+x1a(i))
-      enddo
+  print *, myid,x1minloc,x1maxloc
 
-      dy=(x2max-x2min)/ngrid
-      do j=1,jn
-         x2a(j) = dy*(j-(mgn+1))+x2min
-      enddo
-      do j=1,jn-1
-         x2b(j) = 0.5d0*(x2a(j+1)+x2a(j))
-      enddo
+  dx=(x1maxloc-x1minloc)/ngrid
+  do i=1,in
+     x1a(i) = dx*(i-(mgn+1))+x1minloc
+  enddo
+  do i=1,in-1
+     x1b(i) = 0.5d0*(x1a(i+1)+x1a(i))
+  enddo
+
+
+  x2minloc = x2min + (x2max-x2min)/ntiles(2)* coords(2)
+  x2maxloc = x2min + (x2max-x2min)/ntiles(2)*(coords(2)+1)
+
+  print *, myid,x2minloc,x2maxloc
+
+  dy=(x2maxloc-x2minloc)/ngrid
+  do j=1,jn
+     x2a(j) = dy*(j-(mgn+1))+x2minloc
+  enddo
+  do j=1,jn-1
+     x2b(j) = 0.5d0*(x2a(j+1)+x2a(j))
+  enddo
       
-      return
-      end subroutine GenerateGrid
+  return
+end subroutine GenerateGrid
 
       subroutine GenerateProblem
       use basicmod
@@ -817,6 +835,7 @@ end subroutine YbcSendRecv
 
       subroutine Output
       use basicmod
+      use mpimod
       implicit none
       integer::i,j,k
       character(20),parameter::dirname="snapshots/"
@@ -836,7 +855,7 @@ end subroutine YbcSendRecv
       endif
       if(time .lt. tout+dtout) return
 
-      write(filename,'(a2,i5.5,a4)')"Sc",nout,".xss"
+      write(filename,'(a2,3(i2.2),a1,i5.5,a4)')"Sc",coords(1),coords(2),coords(3),"-",nout,".xss"
       filename = trim(dirname)//filename
       open(unitout,file=filename,status='replace',form='formatted') 
 
@@ -850,7 +869,7 @@ end subroutine YbcSendRecv
       enddo
       close(unitout)
 
-      write(6,*) "output:",nout,time
+      if(myid_w == 0) print *, "output:",nout,time
 
       nout=nout+1
       tout=time
