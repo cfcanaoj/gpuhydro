@@ -231,22 +231,22 @@ subroutine BoundaryCondition
   k=ks
   do j=1,jn-1
   do i=1,mgn
-      d(i,j,k) = varrecvXend(i,j,k,1)
-     ei(i,j,k) = varrecvXend(i,j,k,2)
-     v1(i,j,k) = varrecvXend(i,j,k,3)
-     v2(i,j,k) = varrecvXend(i,j,k,4)
-     v3(i,j,k) = varrecvXend(i,j,k,5)
+      d(i,j,k) = varrecvXstt(i,j,k,1)
+     ei(i,j,k) = varrecvXstt(i,j,k,2)
+     v1(i,j,k) = varrecvXstt(i,j,k,3)
+     v2(i,j,k) = varrecvXstt(i,j,k,4)
+     v3(i,j,k) = varrecvXstt(i,j,k,5)
   enddo
   enddo
 
   k=ks
   do j=1,jn-1
   do i=1,mgn
-      d(ie+i,j,k) = varrecvXstt(i,j,k,1)
-     ei(ie+i,j,k) = varrecvXstt(i,j,k,2)
-     v1(ie+i,j,k) = varrecvXstt(i,j,k,3)
-     v2(ie+i,j,k) = varrecvXstt(i,j,k,4)
-     v3(ie+i,j,k) = varrecvXstt(i,j,k,5)
+      d(ie+i,j,k) = varrecvXend(i,j,k,1)
+     ei(ie+i,j,k) = varrecvXend(i,j,k,2)
+     v1(ie+i,j,k) = varrecvXend(i,j,k,3)
+     v2(ie+i,j,k) = varrecvXend(i,j,k,4)
+     v3(ie+i,j,k) = varrecvXend(i,j,k,5)
   enddo
   enddo
 
@@ -860,6 +860,7 @@ end subroutine YbcSendRecv
       open(unitout,file=filename,status='replace',form='formatted') 
 
       write(unitout,*) "# ",time
+      write(unitout,*) "# ",ngrid,ngrid
       k=ks
       do j=js,je
       do i=is,ie
