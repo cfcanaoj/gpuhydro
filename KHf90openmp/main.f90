@@ -5,7 +5,7 @@ module basicmod
   integer,parameter::nhymax=20000
   real(8)::time,dt
   data time / 0.0d0 /
-  integer,parameter::ngrid=250
+  integer,parameter::ngrid=120
   integer,parameter::mgn=2
   integer,parameter::in=ngrid+2*mgn+1 &
  &                  ,jn=ngrid+2*mgn+1 &
@@ -56,11 +56,12 @@ program main
   implicit none
   real(8)::time_begin,time_end
   integer::threadsnum
-  logical,parameter::nooutput=.false.
+  logical,parameter::nooutput=.true.
   call InitializeMPI
   threadsnum = omp_get_max_threads()
   if(myid_w == 0) print *, "threads=",threadsnum
-  if(myid_w == 0) print *, "setup grids and fiels"
+  if(myid_w == 0) print *, "setup grids and fields"
+  if(myid_w == 0) print *, "grid size for x y",ngrid*ntiles(1),ngrid*ntiles(2)
   call GenerateGrid
   call GenerateProblem
   call ConsvVariable
@@ -100,7 +101,7 @@ subroutine GenerateGrid
   x1minloc = x1min + (x1max-x1min)/ntiles(1)* coords(1)
   x1maxloc = x1min + (x1max-x1min)/ntiles(1)*(coords(1)+1)
 
-  print *, myid,x1minloc,x1maxloc
+!  print *, myid,x1minloc,x1maxloc
 
   dx=(x1maxloc-x1minloc)/ngrid
   do i=1,in
@@ -114,7 +115,7 @@ subroutine GenerateGrid
   x2minloc = x2min + (x2max-x2min)/ntiles(2)* coords(2)
   x2maxloc = x2min + (x2max-x2min)/ntiles(2)*(coords(2)+1)
 
-  print *, myid,x2minloc,x2maxloc
+!  print *, myid,x2minloc,x2maxloc
 
   dy=(x2maxloc-x2minloc)/ngrid
   do j=1,jn
