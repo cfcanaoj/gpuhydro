@@ -72,7 +72,8 @@ program main
   logical:: nooutput=.true.
     
   call InitializeMPI
-  if(myid_w == 0) print *, "setup grids and fiels"
+  if(myid_w == 0) print *, "setup grids and fields"
+  if(myid_w == 0) print *, "grid size for x y",ngrid*ntiles(1),ngrid*ntiles(2)
   call GenerateGrid
   call GenerateProblem
   call ConsvVariable
@@ -112,7 +113,7 @@ subroutine GenerateGrid
   x1minloc = x1min + (x1max-x1min)/ntiles(1)* coords(1)
   x1maxloc = x1min + (x1max-x1min)/ntiles(1)*(coords(1)+1)
 
-  print *, myid,x1minloc,x1maxloc
+!  print *, myid,x1minloc,x1maxloc
 
   dx=(x1maxloc-x1minloc)/ngrid
   do i=1,in
@@ -126,7 +127,7 @@ subroutine GenerateGrid
   x2minloc = x2min + (x2max-x2min)/ntiles(2)* coords(2)
   x2maxloc = x2min + (x2max-x2min)/ntiles(2)*(coords(2)+1)
 
-  print *, myid,x2minloc,x2maxloc
+!  print *, myid,x2minloc,x2maxloc
 
   dy=(x2maxloc-x2minloc)/ngrid
   do j=1,jn
@@ -141,64 +142,63 @@ subroutine GenerateGrid
   return
 end subroutine GenerateGrid
 
-      subroutine GenerateProblem
-      use basicmod
-      implicit none
-      integer::i,j,k
-      real(8) :: rho1,rho2,Lsm,u1,u2
-      data rho1  /  1.0d0 /
-      data rho2  /  2.0d0 /
-      data u1    /  0.5d0 /
-      data u2    / -0.5d0 /
-      data Lsm   /  0.025d0 /
+subroutine GenerateProblem
+  use basicmod
+  implicit none
+  integer::i,j,k
+  real(8) :: rho1,rho2,Lsm,u1,u2
+  data rho1  /  1.0d0 /
+  data rho2  /  2.0d0 /
+  data u1    /  0.5d0 /
+  data u2    / -0.5d0 /
+  data Lsm   /  0.025d0 /
 
-      real(8)::pi
-      pi=acos(-1.0d0)
+  real(8),parameter::pi=acos(-1.0d0)
 
-      d(:,:,:) = 1.0d0
+  d(:,:,:) = 1.0d0
+      
+  do k=ks,ke
+  do j=js,je
+  do i=is,ie
 
-      do k=ks,ke
-      do j=js,je
-      do i=is,ie
-
-         if      ( x2b(j) .gt. 0.25d0 )then
+     if      ( x2b(j) .gt. 0.25d0 )then
             v1(i,j,k) =    u1 - (  u1-  u2)/2.0d0*exp(-( x2b(j)-0.25d0)/Lsm)
              d(i,j,k) =  rho1 - (rho1-rho2)/2.0d0*exp(-( x2b(j)-0.25d0)/Lsm)
-         else if (x2b(j) .gt.  0.0d0 )then
+     else if (x2b(j) .gt.  0.0d0 )then
             v1(i,j,k) =    u2 + (  u1-  u2)/2.0d0*exp(-( 0.25d0-x2b(j))/Lsm)
              d(i,j,k) =  rho2 + (rho1-rho2)/2.0d0*exp(-( 0.25d0-x2b(j))/Lsm)
-         else if (x2b(j) .gt. -0.25d0)then
+     else if (x2b(j) .gt. -0.25d0)then
             v1(i,j,k) =    u2 + (  u1-  u2)/2.0d0*exp(-( x2b(j)+0.25d0)/Lsm)
              d(i,j,k) =  rho2 + (rho1-rho2)/2.0d0*exp(-( x2b(j)+0.25d0)/Lsm)
-          else
+     else
             v1(i,j,k) =    u1 - (  u1-  u2)/2.0d0*exp(-(-0.25d0-x2b(j))/Lsm)
              d(i,j,k) =  rho1 - (rho1-rho2)/2.0d0*exp(-(-0.25d0-x2b(j))/Lsm)
-         endif
+     endif
 
-          p(i,j,k) = 2.5d0
-         v2(i,j,k) = 0.01d0*sin(4.0d0*pi*x1b(i))
-         v3(i,j,k) = 0.0d0
-      enddo
-      enddo
-      enddo
+     p(i,j,k) = 2.5d0
+     v2(i,j,k) = 0.01d0*sin(4.0d0*pi*x1b(i))
+     v3(i,j,k) = 0.0d0
+  enddo
+  enddo
+  enddo
 
 
-      do k=ks,ke
-      do j=js,je
-      do i=is,ie
-          ei(i,j,k) = p(i,j,k)/(gam-1.0d0)
-          cs(i,j,k) = sqrt(gam*p(i,j,k)/d(i,j,k))
-      enddo
-      enddo
-      enddo
+  do k=ks,ke
+  do j=js,je
+  do i=is,ie
+     ei(i,j,k) = p(i,j,k)/(gam-1.0d0)
+     cs(i,j,k) = sqrt(gam*p(i,j,k)/d(i,j,k))
+  enddo
+  enddo
+  enddo
       
 !$acc update device (d,v1,v2,v3)
 !$acc update device (p,ei,cs)
 
-      call BoundaryCondition
+  call BoundaryCondition
 
-      return
-      end subroutine GenerateProblem
+  return
+end subroutine GenerateProblem
 
 subroutine BoundaryCondition
   use basicmod
@@ -251,13 +251,9 @@ subroutine BoundaryCondition
   enddo
 !$acc end kernels
 
-!$acc update host (varsendXstt,varsendXend,varsendYstt,varsendYend)
-
   call XbcSendRecv(varsendXstt,varsendXend,varrecvXstt,varrecvXend)
   call YbcSendRecv(varsendYstt,varsendYend,varrecvYstt,varrecvYend)
-  
-!$acc update device (varrecvXstt,varrecvXend,varrecvYstt,varrecvYend)
-  
+    
 !$acc kernels
   k=ks
 !$acc loop collapse(2) independent
@@ -318,12 +314,25 @@ subroutine XbcSendRecv(varsendXstt,varsendXend,varrecvXstt,varrecvXend)
   implicit none
   real(8),dimension(mgn,jn,kn,nbc),intent(in) ::varsendXstt,varsendXend
   real(8),dimension(mgn,jn,kn,nbc),intent(out)::varrecvXstt,varrecvXend
+  integer::i,j,k,n
   
   if(ntiles(1) == 1) then
-     varrecvXstt(:,:,:,:) = varsendXend(:,:,:,:)
-     varrecvXend(:,:,:,:) = varsendXstt(:,:,:,:)
+     
+!$acc kernels
+  k=ks
+!$acc loop collapse(3) independent
+  do n=1,nbc
+  do j=1,jn-1
+  do i=1,mgn
+     varrecvXstt(i,j,k,n) = varsendXend(i,j,k,n)
+     varrecvXend(i,j,k,n) = varsendXstt(i,j,k,n)
+  enddo
+  enddo
+  enddo
+!$acc end kernels
+     
   else
-
+!$acc host_data use_device(varsendXstt,varsendXend,varrecvXstt,varrecvXend)
      nreq = nreq + 1         
      call MPI_IRECV(varrecvXstt,mgn*jn*kn*nbc &
     & , MPI_DOUBLE &
@@ -346,7 +355,7 @@ subroutine XbcSendRecv(varsendXstt,varsendXend,varrecvXstt,varrecvXend)
 
      if(nreq .ne. 0) call MPI_WAITALL ( nreq, req, stat, ierr )
      nreq = 0
-
+!$acc end host_data
   endif
 
   return
@@ -359,12 +368,26 @@ subroutine YbcSendRecv(varsendYstt,varsendYend,varrecvYstt,varrecvYend)
   implicit none
   real(8),dimension(in,mgn,kn,nbc),intent(in) ::varsendYstt,varsendYend
   real(8),dimension(in,mgn,kn,nbc),intent(out)::varrecvYstt,varrecvYend
+  integer::i,j,k,n
 
   if(ntiles(2) == 1) then
-     varrecvYstt(:,:,:,:) = varsendYend(:,:,:,:)
-     varrecvYend(:,:,:,:) = varsendYstt(:,:,:,:)
+     
+!$acc kernels
+  k=ks
+!$acc loop collapse(3) independent
+  do n=1,nbc
+  do j=1,mgn
+  do i=1,in-1
+     varrecvYstt(i,j,k,n) = varsendYend(i,j,k,n)
+     varrecvYend(i,j,k,n) = varsendYstt(i,j,k,n)
+  enddo
+  enddo
+  enddo
+!$acc end kernels
+     
   else
 
+!$acc host_data use_device(varsendYstt,varsendYend,varrecvYstt,varrecvYend)
      nreq = nreq + 1         
      call MPI_IRECV(varrecvYstt,mgn*in*kn*nbc &
     & , MPI_DOUBLE &
@@ -378,7 +401,7 @@ subroutine YbcSendRecv(varsendYstt,varsendYend,varrecvYstt,varrecvYend)
      nreq = nreq + 1
      call MPI_IRECV(varrecvYend,mgn*in*kn*nbc &
     & , MPI_DOUBLE &
-    & , n2p,2200, comm3d, req(nreq), ierr)
+    & , n2p, 2200, comm3d, req(nreq), ierr)
 
      nreq = nreq + 1
      call MPI_ISEND(varsendYend,mgn*in*kn*nbc &
@@ -387,15 +410,16 @@ subroutine YbcSendRecv(varsendYstt,varsendYend,varrecvYstt,varrecvYend)
 
      if(nreq .ne. 0) call MPI_WAITALL ( nreq, req, stat, ierr )
      nreq = 0
+!$acc end host_data
   endif
 
   return
 end subroutine YbcSendRecv
 
-      subroutine ConsvVariable
-      use basicmod
-      implicit none
-      integer::i,j,k
+subroutine ConsvVariable
+  use basicmod
+  implicit none
+  integer::i,j,k
 !$acc kernels      
 !$acc loop collapse(3) independent
       do k=ks,ke
@@ -414,13 +438,13 @@ end subroutine YbcSendRecv
       enddo
 !$acc end kernels
       
-      return
-      end subroutine Consvvariable
+  return
+end subroutine Consvvariable
 
-      subroutine PrimVariable
-      use basicmod
-      implicit none
-      integer::i,j,k
+subroutine PrimVariable
+  use basicmod
+  implicit none
+  integer::i,j,k
       
 !$acc kernels      
 !$acc loop collapse(3) independent
@@ -443,19 +467,19 @@ end subroutine YbcSendRecv
       enddo
       enddo
 !$acc end kernels
-      return
-      end subroutine PrimVariable
+  return
+end subroutine PrimVariable
 
-      subroutine TimestepControl
-      use basicmod
-      implicit none
-      real(8)::dtl1
-      real(8)::dtl2
-      real(8)::dtl3
-      real(8)::dtlocal
-      real(8)::dtmin
-      integer::i,j,k
-      dtmin=1.0d90
+subroutine TimestepControl
+  use basicmod
+  implicit none
+  real(8)::dtl1
+  real(8)::dtl2
+  real(8)::dtl3
+  real(8)::dtlocal
+  real(8)::dtmin
+  integer::i,j,k
+  dtmin=1.0d90
 !$acc kernels    
 !$acc loop collapse(3) reduction(min:dtmin)      
       do k=ks,ke
@@ -474,14 +498,14 @@ end subroutine YbcSendRecv
 !$acc end kernels
 !$acc update host (dt)
       
-      return
-      end subroutine TimestepControl
+  return
+end subroutine TimestepControl
 
-      subroutine StateVevtor
-      use basicmod
-      use fluxmod
-      implicit none
-      integer::i,j,k
+subroutine StateVevtor
+  use basicmod
+  use fluxmod
+  implicit none
+  integer::i,j,k
 
 !$acc kernels
       k=ks
@@ -498,8 +522,8 @@ end subroutine YbcSendRecv
       enddo
 !$acc end kernels
       
-      return
-      end subroutine StateVevtor
+  return
+end subroutine StateVevtor
 
       subroutine minmod(a,b,d)
 !$acc routine seq
@@ -924,10 +948,10 @@ subroutine Output
   return
 end subroutine Output
     
-      subroutine makedirs(outdir)
-        character(len=*), intent(in) :: outdir
-        character(len=256) command
-        write(command, *) 'if [ ! -d ', trim(outdir), ' ]; then mkdir -p ', trim(outdir), '; fi'
-        write(*, *) trim(command)
-        call system(command)
-      end subroutine makedirs
+subroutine makedirs(outdir)
+  character(len=*), intent(in) :: outdir
+  character(len=256) command
+  write(command, *) 'if [ ! -d ', trim(outdir), ' ]; then mkdir -p ', trim(outdir), '; fi'
+  write(*, *) trim(command)
+  call system(command)
+end subroutine makedirs
