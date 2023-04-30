@@ -5,7 +5,7 @@ module basicmod
   integer,parameter::nhymax=20000
   real(8)::time,dt
   data time / 0.0d0 /
-  integer,parameter::ngrid=125
+  integer,parameter::ngrid=120
   integer,parameter::mgn=2
   integer,parameter::in=ngrid+2*mgn+1 &
  &                  ,jn=ngrid+2*mgn+1 &
@@ -60,7 +60,8 @@ program main
   call InitializeMPI
   threadsnum = omp_get_max_threads()
   if(myid_w == 0) print *, "threads=",threadsnum
-  if(myid_w == 0) print *, "setup grids and fiels"
+  if(myid_w == 0) print *, "setup grids and fields"
+  if(myid_w == 0) print *, "grid size for x y",ngrid*ntiles(1),ngrid*ntiles(2)
   call GenerateGrid
   call GenerateProblem
   call ConsvVariable
