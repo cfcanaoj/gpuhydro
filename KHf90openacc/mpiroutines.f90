@@ -13,9 +13,12 @@ module mpimod
   logical :: reorder
   integer :: n1m, n1p, n2m, n2p, n3m, n3p
   integer :: nreq, nsub
+  
+  integer ::   gpuid, ngpus
 
 contains
 subroutine InitializeMPI
+  use openacc
   implicit none
   integer::key,color
   integer::np_hyd
@@ -61,7 +64,18 @@ subroutine InitializeMPI
   call MPI_CART_SHIFT( comm3d, 2, 1, n3m, n3p, ierr )
   !
   call MPI_CART_COORDS( comm3d, myid, 3, coords, ierr )
-      
+
+  ngpus = acc_get_num_devices(acc_device_nvidia)
+  if(myid_w == 0) then
+     print *, "num of GPUs = ", ngpus
+  end if
+
+  gpuid = mod(myid_w, ngpus)
+  if(ngpus == 0) gpuid = -1
+  if(gpuid >= 0) then
+     call acc_set_device_num(gpuid, acc_device_nvidia)
+  end if
+
   return
 end subroutine InitializeMPI
 
