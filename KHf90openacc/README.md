@@ -6,7 +6,7 @@ First you need the setup for ssh-connection to github (see [the instrcution](../
 After you login the server, `g00.cfca.nao.ac.jp`, perform the following command.
     
     cd /gwork0/<username>
-    git clone git@github.com:cfcanaoj/gpuhydro gpuhydro
+    git clone -b ws2022 git@github.com:cfcanaoj/gpuhydro gpuhydro
     cd gpuhydro/KHf90openaccc
     
 
