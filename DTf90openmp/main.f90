@@ -7,7 +7,7 @@
       real(8),parameter:: timemax=5.0d0
       real(8),parameter:: dtout=5.0d0/600
 
-      integer,parameter::ngrid=32
+      integer,parameter::ngrid=128
       integer,parameter::mgn=2
       integer,parameter::in=ngrid+2*mgn+1 &
      &                  ,jn=ngrid+2*mgn+1 &
@@ -71,7 +71,6 @@ program main
   real(8)::time_begin,time_end
   integer::threadsnum
   logical,parameter::nooutput=.false.
-  logical::is_final
 
   call InitializeMPI
   threadsnum = omp_get_max_threads()
@@ -84,6 +83,7 @@ program main
   call ConsvVariable
 
   if(myid_w == 0) print *, "entering main loop"
+  if(.not. nooutput .and. myid_w == 0) print *, " step time dt "
   ! main loop
   time_begin = omp_get_wtime()
   mloop: do nhy=1,nhymax
@@ -100,7 +100,7 @@ program main
      call PrimVariable
      time=time+dt
      
-     if(.not. nooutput ) call Output
+     if(.not. nooutput ) call Output(.false.)
      if(time > timemax) exit mloop
   enddo mloop
   time_end = omp_get_wtime()
@@ -108,7 +108,7 @@ program main
   if(myid_w == 0) print *, "sim time [s]:", time_end-time_begin
   if(myid_w == 0) print *, "time/count/cell", (time_end-time_begin)/(ngrid**3)/nhymax
   
-  call Output
+  call Output(.true.)
   
   call FinalizeMPI
   if(myid_w == 0) print *, "program has been finished"
@@ -2112,7 +2112,7 @@ end subroutine Consvvariable
       return
       end subroutine  DampPsi
 
-subroutine Output
+subroutine Output(is_final)
   use basicmod
   use mpiiomod
   use mpimod
@@ -2129,6 +2129,8 @@ subroutine Output
   integer,parameter::unitbin=13
   integer,parameter:: gs=1
   integer,parameter:: nvar=9
+
+  logical, intent(in):: is_final
 
   logical, save:: is_inited
   data is_inited /.false./
@@ -2164,8 +2166,7 @@ subroutine Output
      is_inited =.true.
   endif
 
-
-!  if(time .lt. tout+dtout) return
+  if(time .lt. tout+dtout .and. .not. is_final) return
 
   if(myid_w == 0)then
   write(filename,'(a3,i5.5,a4)')"unf",nout,".dat"
