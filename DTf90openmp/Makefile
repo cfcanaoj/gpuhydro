@@ -37,7 +37,6 @@ fopt = -g -traceback -O2
 OBJS=main.o mpiroutines.o
 
 mpiroutines.o:
-dataout.o: mpiroutines.o
 main.o: main.f90 dataout.o mpiroutines.o 
 
 ${exe}: ${OBJS}

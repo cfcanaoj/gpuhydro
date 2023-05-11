@@ -86,15 +86,14 @@ module mpiiomod
   integer,dimension(3):: npart
   integer:: nvars,nvarg
   integer:: timeid
-  character(2) :: id
-  data id /"DT"/
-  
-  character(10) :: datadir
-  data datadir /"bindata/"/
+  character(len= 2),parameter :: id ="DT"
+  character(len=10),parameter :: datadir="bindata/"
     
   real(8),dimension(:,:),allocatable,save :: gridX, gridY, gridZ
   real(8),dimension(:,:,:,:),allocatable,save :: data3D
-  public ntotal,npart,nvars
+  public ntotal,npart
+  public nvars,nvarg
+  
   public gridX,gridY,gridZ,data3D
   public MPIOutputBindary
 contains  
@@ -103,16 +102,15 @@ contains
     implicit NONE
     
     integer :: i, j, k, l, m, n
-    integer :: nx1, nx2, nx3
 
     integer::iss,jss,kss
     integer::iee,jee,kee
     integer::itot,jtot,ktot
       
     integer strtoi 
-    character(15) :: unffile
-    character(40)::usrfile
-    character(30) :: fpathbin,fpathunf
+    character(len=15) :: unffile
+    character(len=40)::usrfile
+    character(len=30) :: fpathbin,fpathunf
     integer, parameter :: unitunf=560
     integer,save:: unitd3d,unitg1d, unitg2d, unitg3d, unitg0d
     data unitd3d / 512 /
@@ -130,12 +128,13 @@ contains
     integer(kind=MPI_OFFSET_KIND) idisp
     data idisp / 0 /
 
-    nvarg=2
 
+    goto 3000
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! 1D GRID PREPARE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    print *, "1D",myid_w
+    
     init1D: if(.not. is_inited )then
 
        Asize(1) = nvarg
@@ -147,15 +146,20 @@ contains
        if(coords(1) .eq. ntiles(1)-1)Ssize(2)=Ssize(2)+1  ! + edge
        Start(2) = npart(1) * coords(1)
        
+       print *, "1D p2",Asize(2),Ssize(2),Start(2)
+       
        call MPI_TYPE_CREATE_SUBARRAY( &
-     & nvarg, & ! dimension of array
+     & 2, & ! dimension of array
      & Asize,Ssize,Start, &
      & MPI_ORDER_FORTRAN, &
      & MPI_DOUBLE_PRECISION,& 
      & SAG1D, &! Data type of Subarray for Grid 1D
      & ierr)
+       print *, "1D p3"
+       
        call MPI_TYPE_COMMIT(SAG1D,ierr)
 
+       print *, "1D p3.5"
       write(usrfile,"(a3,a2)")'g1d',id
       fpathbin = trim(datadir)//usrfile
       call MPI_FILE_OPEN(MPI_COMM_WORLD, &
@@ -163,6 +167,7 @@ contains
      &  MPI_MODE_WRONLY+MPI_MODE_CREATE, &
      &            MPI_INFO_NULL,unitg1d,ierr)
 
+      print *, "1D p4",fpathbin,myid_w
       call MPI_FILE_SET_VIEW( &
      &   unitg1d, &! file path
      &     idisp, &! 
@@ -170,6 +175,7 @@ contains
      &     SAG1D, &! data type
      & 'NATIVE', MPI_INFO_NULL,ierr)
 
+      print *, "1D p5"
       call MPI_FILE_WRITE_ALL( &
      &   unitg1d, &  ! file path
      &     gridX, &  ! the data
@@ -178,22 +184,25 @@ contains
      & stat, &
      & ierr)
       call MPI_FILE_CLOSE(unitg1d,ierr)
+      
+      print *, "1D p6"
    endif init1D
-
+    
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! 2D GRID PREPARE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    init2D: if(.not. is_inited )then
       Asize(1) = nvarg
-      Asize(2) = ntotal(2)+1 ! total jzones + edge
       Ssize(1) = nvarg
+      Start(1) = 0
+      
+      Asize(2) = ntotal(2)+1 ! total jzones + edge
       Ssize(2) = npart(2)    ! jzones in 1 process
       if(coords(2) .eq. ntiles(2)-1)Ssize(2)=Ssize(2)+1  ! + edge
-      Start(1) = 0
       Start(2) = ntotal(2) * coords(2)
       call MPI_TYPE_CREATE_SUBARRAY(&
-     & nvarg, & ! dimension of array
+     & 2, & ! dimension of array
      & Asize,Ssize,Start,&
      & MPI_ORDER_FORTRAN,&
      & MPI_DOUBLE_PRECISION,&
@@ -230,13 +239,12 @@ contains
          Asize(1) = nvarg
          Ssize(1) = nvarg
          Start(1) = 0
-         
-         Asize(2) = npart(3)*ntiles(3)+1  ! total kzones+edge
+         Asize(2) = ntotal(3)+1  ! total kzones+edge
          Ssize(2) = npart(3) ! kzones in 1 process
-         if(coords(3) .eq. ntiles(3)-1)Ssize(3)=Ssize(3)+1  ! + edge
+         if(coords(3) .eq. ntiles(3)-1)Ssize(2)=Ssize(2)+1  ! + edge
          Start(2) = npart(3) * coords(3)
          call MPI_TYPE_CREATE_SUBARRAY(&
-     & nvarg, & ! dimension of array
+     & 2, & ! dimension of array
      & Asize,Ssize,Start, &
      & MPI_ORDER_FORTRAN, &
      & MPI_DOUBLE_PRECISION,&
@@ -268,7 +276,9 @@ contains
       call MPI_FILE_CLOSE(unitg3d,ierr)
       
    endif init3D
-   
+
+ 3000 continue
+    print *, "DD",myid_w
           
     initdata: if(.not. is_inited )then
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

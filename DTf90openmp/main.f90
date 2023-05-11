@@ -7,7 +7,7 @@
       real(8),parameter:: timemax=5.0d0
       real(8),parameter:: dtout=5.0d0/600
 
-      integer,parameter::ngrid=128
+      integer,parameter::ngrid=32
       integer,parameter::mgn=2
       integer,parameter::in=ngrid+2*mgn+1 &
      &                  ,jn=ngrid+2*mgn+1 &
@@ -35,12 +35,8 @@
       
       module eosmod
       implicit none
-! adiabatic
-!      real(8),parameter::gam=5.0d0/3.0d0 !! adiabatic index
-!!$acc declare create(gam)
 ! isothermal
       real(8)::csiso  !! isothemal sound speed
-!$acc declare create(csiso)
       end module eosmod
     
       module fluxmod
@@ -65,8 +61,6 @@
      &                          ,mbmu=mubu,mbmv=mubv,mbmw=mubw
       real(8),dimension(mflx,in,jn,kn):: nflux1,nflux2,nflux3
 
-!$acc declare create(chg)
-!$acc declare create(svc,nflux1,nflux2,nflux3)
       end module fluxmod
 
 program main
@@ -76,9 +70,8 @@ program main
   implicit none
   real(8)::time_begin,time_end
   integer::threadsnum
-  logical,parameter::nooutput=.true.
+  logical,parameter::nooutput=.false.
   logical::is_final
-  data is_final /.false./
 
   call InitializeMPI
   threadsnum = omp_get_max_threads()
@@ -89,6 +82,10 @@ program main
   call GenerateGrid
   call GenerateProblem
   call ConsvVariable
+
+  call Output
+  stop
+  
   if(myid_w == 0) print *, "entering main loop"
   ! main loop
   time_begin = omp_get_wtime()
@@ -114,7 +111,6 @@ program main
   if(myid_w == 0) print *, "sim time [s]:", time_end-time_begin
   if(myid_w == 0) print *, "time/count/cell", (time_end-time_begin)/(ngrid**3)/nhymax
   
-  is_final = .true.
   call Output
   
   call FinalizeMPI
@@ -373,7 +369,6 @@ subroutine BoundaryCondition
   enddo
   enddo
   enddo
-
   
   do k=1,kn-1
   do j=1,jn-1
@@ -2126,6 +2121,7 @@ subroutine Output
   use mpimod
   implicit none
   integer::i,j,k
+  integer::iee,jee,kee
   character(20),parameter::dirname="bindata/"
   character(40)::filename
   real(8),save::tout
@@ -2139,6 +2135,15 @@ subroutine Output
 
   logical, save:: is_inited
   data is_inited /.false./
+
+
+  iee = ie
+  jee = je
+  kee = ke
+  
+  if(coords(1) .eq. ntiles(1)-1) iee = ie+1
+  if(coords(2) .eq. ntiles(2)-1) jee = je+1
+  if(coords(3) .eq. ntiles(3)-1) kee = ke+1
   
   if (.not. is_inited) then
      npart(1) = ngrid
@@ -2149,11 +2154,13 @@ subroutine Output
      ntotal(2) = ngrid*ntiles(2)
      ntotal(3) = ngrid*ntiles(3)
      
+     nvarg = 2
      nvars = 9
      
-     allocate(gridX(2,ngrid+1))
-     allocate(gridY(2,ngrid+1))
-     allocate(gridZ(2,ngrid+1))
+     allocate(gridX(nvarg,1:iee-is+1))
+     allocate(gridY(nvarg,1:jee-js+1))
+     allocate(gridZ(nvarg,1:kee-ks+1))
+
      allocate(data3D(nvars,ngrid,ngrid,ngrid))
      
      call makedirs("bindata")
@@ -2161,8 +2168,7 @@ subroutine Output
   endif
 
 
-  if(time .lt. tout+dtout) return
-!$acc update host (d,v1,v2,v3,p,b1,b2,b3,bp)
+!  if(time .lt. tout+dtout) return
 
   if(myid_w == 0)then
   write(filename,'(a3,i5.5,a4)')"unf",nout,".dat"
@@ -2176,24 +2182,24 @@ subroutine Output
   close(unitout)
   endif
 
-  gridX(is-gs:ie+gs,1) = x1b(is-gs:ie+gs)
-  gridX(is-gs:ie+gs,2) = x1a(is-gs:ie+gs)
+  gridX(1,1:iee-is+1) = x1b(is:iee)
+  gridX(2,1:iee-is+1) = x1a(is:iee)
   
-  gridY(is-gs:ie+gs,1) = x2b(is-gs:ie+gs)
-  gridY(is-gs:ie+gs,2) = x2a(is-gs:ie+gs)
+  gridY(1,1:jee-js+1) = x2b(js:jee)
+  gridY(2,1:jee-js+1) = x2a(js:jee)
 
-  gridZ(ks-gs:ke+gs,1) = x3b(ks-gs:ke+gs)
-  gridZ(ks-gs:ke+gs,2) = x3a(ks-gs:ke+gs)
+  gridZ(1,1:kee-ks+1) = x3b(ks:kee)
+  gridZ(2,1:kee-ks+1) = x3a(ks:kee)
 
-  data3D(1,is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs) =  d(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-  data3D(2,is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs) = v1(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-  data3D(3,is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs) = v2(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-  data3D(4,is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs) = v3(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-  data3D(5,is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs) = b1(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-  data3D(6,is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs) = b2(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-  data3D(7,is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs) = b3(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-  data3D(8,is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs) = bp(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-  data3D(9,is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs) =  p(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
+  data3D(1,is:ie,js:je,ks:ke) =  d(is:ie,js:je,ks:ke)
+  data3D(2,is:ie,js:je,ks:ke) = v1(is:ie,js:je,ks:ke)
+  data3D(3,is:ie,js:je,ks:ke) = v2(is:ie,js:je,ks:ke)
+  data3D(4,is:ie,js:je,ks:ke) = v3(is:ie,js:je,ks:ke)
+  data3D(5,is:ie,js:je,ks:ke) = b1(is:ie,js:je,ks:ke)
+  data3D(6,is:ie,js:je,ks:ke) = b2(is:ie,js:je,ks:ke)
+  data3D(7,is:ie,js:je,ks:ke) = b3(is:ie,js:je,ks:ke)
+  data3D(8,is:ie,js:je,ks:ke) = bp(is:ie,js:je,ks:ke)
+  data3D(9,is:ie,js:je,ks:ke) =  p(is:ie,js:je,ks:ke)
 
   if(myid_w==0)print *, "output:",nout,time
 
