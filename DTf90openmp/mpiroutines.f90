@@ -119,7 +119,6 @@ module mpiiomod
   integer,dimension(3):: ntotal
   integer,dimension(3):: npart
   integer:: nvars,nvarg
-  integer:: timeid
   character(len= 2),parameter :: id ="DT"
   character(len=10),parameter :: datadir="bindata/"
     
@@ -131,10 +130,10 @@ module mpiiomod
   public gridX,gridY,gridZ,data3D
   public MPIOutputBindary
 contains  
-  subroutine MPIOutputBindary
+  subroutine MPIOutputBindary(timeid)
     use mpimod
     implicit NONE
-    
+    integer,intent(in) :: timeid
     integer :: i, j, k, l, m, n
 
     integer::iss,jss,kss

@@ -2182,9 +2182,9 @@ subroutine Output(is_final)
 
   open(unitout,file=filename,status='replace',form='formatted')
   write(unitout,*) "# ",time,dt
-  write(unitout,*) "# ",ngrid,gs
-  write(unitout,*) "# ",ngrid,gs
-  write(unitout,*) "# ",ngrid,gs
+  write(unitout,*) "# ",ngrid
+  write(unitout,*) "# ",ngrid
+  write(unitout,*) "# ",ngrid
   close(unitout)
   endif
 
@@ -2209,7 +2209,7 @@ subroutine Output(is_final)
 
   if(myid_w==0)print *, "output:",nout,time
 
-  call MPIOutputBindary
+  call MPIOutputBindary(nout)
       
   nout=nout+1
   tout=time
