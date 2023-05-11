@@ -2,6 +2,7 @@
       implicit none
       integer::nhy
       integer,parameter::nhymax=200
+      integer,parameter::nhydis=nhymax/100
       real(8)::time,dt
       data time / 0.0d0 /
       real(8),parameter:: timemax=5.0d0
@@ -88,7 +89,7 @@ program main
   time_begin = omp_get_wtime()
   mloop: do nhy=1,nhymax
      call TimestepControl
-     if(mod(nhy,300) .eq. 0 .and. .not. nooutput .and. myid_w == 0) print *, nhy,time,dt
+     if(mod(nhy,nhydis) .eq. 0 .and. .not. nooutput .and. myid_w == 0) print *, nhy,time,dt
      call BoundaryCondition
      call StateVevtor
      call EvaulateCh
