@@ -2191,15 +2191,15 @@ subroutine Output
   gridZ(1,1:kee-ks+1) = x3b(ks:kee)
   gridZ(2,1:kee-ks+1) = x3a(ks:kee)
 
-  data3D(1,is:ie,js:je,ks:ke) =  d(is:ie,js:je,ks:ke)
-  data3D(2,is:ie,js:je,ks:ke) = v1(is:ie,js:je,ks:ke)
-  data3D(3,is:ie,js:je,ks:ke) = v2(is:ie,js:je,ks:ke)
-  data3D(4,is:ie,js:je,ks:ke) = v3(is:ie,js:je,ks:ke)
-  data3D(5,is:ie,js:je,ks:ke) = b1(is:ie,js:je,ks:ke)
-  data3D(6,is:ie,js:je,ks:ke) = b2(is:ie,js:je,ks:ke)
-  data3D(7,is:ie,js:je,ks:ke) = b3(is:ie,js:je,ks:ke)
-  data3D(8,is:ie,js:je,ks:ke) = bp(is:ie,js:je,ks:ke)
-  data3D(9,is:ie,js:je,ks:ke) =  p(is:ie,js:je,ks:ke)
+  data3D(1,1:npart(1),1:npart(2),1:npart(3)) =  d(is:ie,js:je,ks:ke)
+  data3D(2,1:npart(1),1:npart(2),1:npart(3)) = v1(is:ie,js:je,ks:ke)
+  data3D(3,1:npart(1),1:npart(2),1:npart(3)) = v2(is:ie,js:je,ks:ke)
+  data3D(4,1:npart(1),1:npart(2),1:npart(3)) = v3(is:ie,js:je,ks:ke)
+  data3D(5,1:npart(1),1:npart(2),1:npart(3)) = b1(is:ie,js:je,ks:ke)
+  data3D(6,1:npart(1),1:npart(2),1:npart(3)) = b2(is:ie,js:je,ks:ke)
+  data3D(7,1:npart(1),1:npart(2),1:npart(3)) = b3(is:ie,js:je,ks:ke)
+  data3D(8,1:npart(1),1:npart(2),1:npart(3)) = bp(is:ie,js:je,ks:ke)
+  data3D(9,1:npart(1),1:npart(2),1:npart(3)) =  p(is:ie,js:je,ks:ke)
 
   if(myid_w==0)print *, "output:",nout,time
 

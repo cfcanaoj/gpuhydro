@@ -129,12 +129,9 @@ contains
     data idisp / 0 /
 
 
-    goto 3000
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! 1D GRID PREPARE
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    print *, "1D",myid_w
-    
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
     init1D: if(.not. is_inited )then
 
        Asize(1) = nvarg
@@ -145,9 +142,7 @@ contains
        Ssize(2) = npart(1) ! izones in 1 process
        if(coords(1) .eq. ntiles(1)-1)Ssize(2)=Ssize(2)+1  ! + edge
        Start(2) = npart(1) * coords(1)
-       
-       print *, "1D p2",Asize(2),Ssize(2),Start(2)
-       
+              
        call MPI_TYPE_CREATE_SUBARRAY( &
      & 2, & ! dimension of array
      & Asize,Ssize,Start, &
@@ -155,11 +150,9 @@ contains
      & MPI_DOUBLE_PRECISION,& 
      & SAG1D, &! Data type of Subarray for Grid 1D
      & ierr)
-       print *, "1D p3"
        
        call MPI_TYPE_COMMIT(SAG1D,ierr)
 
-       print *, "1D p3.5"
       write(usrfile,"(a3,a2)")'g1d',id
       fpathbin = trim(datadir)//usrfile
       call MPI_FILE_OPEN(MPI_COMM_WORLD, &
@@ -167,7 +160,6 @@ contains
      &  MPI_MODE_WRONLY+MPI_MODE_CREATE, &
      &            MPI_INFO_NULL,unitg1d,ierr)
 
-      print *, "1D p4",fpathbin,myid_w
       call MPI_FILE_SET_VIEW( &
      &   unitg1d, &! file path
      &     idisp, &! 
@@ -175,7 +167,6 @@ contains
      &     SAG1D, &! data type
      & 'NATIVE', MPI_INFO_NULL,ierr)
 
-      print *, "1D p5"
       call MPI_FILE_WRITE_ALL( &
      &   unitg1d, &  ! file path
      &     gridX, &  ! the data
@@ -185,7 +176,6 @@ contains
      & ierr)
       call MPI_FILE_CLOSE(unitg1d,ierr)
       
-      print *, "1D p6"
    endif init1D
     
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -200,7 +190,7 @@ contains
       Asize(2) = ntotal(2)+1 ! total jzones + edge
       Ssize(2) = npart(2)    ! jzones in 1 process
       if(coords(2) .eq. ntiles(2)-1)Ssize(2)=Ssize(2)+1  ! + edge
-      Start(2) = ntotal(2) * coords(2)
+      Start(2) = npart(2) * coords(2)
       call MPI_TYPE_CREATE_SUBARRAY(&
      & 2, & ! dimension of array
      & Asize,Ssize,Start,&
@@ -276,9 +266,6 @@ contains
       call MPI_FILE_CLOSE(unitg3d,ierr)
       
    endif init3D
-
- 3000 continue
-    print *, "DD",myid_w
           
     initdata: if(.not. is_inited )then
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
