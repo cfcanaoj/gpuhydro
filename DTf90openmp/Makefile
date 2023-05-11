@@ -10,10 +10,10 @@ all: ${exe}
 ##################################
 # setup for CfCA XC50 begin
 ##################################
-#fc= ftn
-#foptopenmp = -qopenmp
-#fopt = -g -traceback -O2
-#fopt=-g -traceback -check all -fpe0
+fc= ftn
+foptopenmp = -qopenmp
+fopt = -g -traceback -O2
+fopt=-g -traceback -check all -fpe0
 
 # setup for CfCA XC50 end
 ##################################
@@ -21,9 +21,9 @@ all: ${exe}
 ##################################
 # setup for CfCA more begin
 ##################################
-fc= mpiifort
-foptopenmp = -qopenmp
-fopt = -g -traceback -O2
+#fc= mpiifort
+#foptopenmp = -qopenmp
+#fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
 # setup for CfCA more end
@@ -37,7 +37,7 @@ fopt = -g -traceback -O2
 OBJS=main.o mpiroutines.o
 
 mpiroutines.o:
-main.o: main.f90 dataout.o mpiroutines.o 
+main.o: main.f90  mpiroutines.o 
 
 ${exe}: ${OBJS}
 	${fc} ${fopt} ${foptopenmp} ${OBJS} -o ${exe}
