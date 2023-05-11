@@ -13,7 +13,7 @@ all: ${exe}
 fc= ftn
 foptopenmp = -qopenmp
 fopt = -g -traceback -O2
-fopt=-g -traceback -check all -fpe0
+#fopt=-g -traceback -check all -fpe0
 
 # setup for CfCA XC50 end
 ##################################

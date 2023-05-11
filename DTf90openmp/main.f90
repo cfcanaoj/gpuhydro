@@ -83,9 +83,6 @@ program main
   call GenerateProblem
   call ConsvVariable
 
-  call Output
-  stop
-  
   if(myid_w == 0) print *, "entering main loop"
   ! main loop
   time_begin = omp_get_wtime()
