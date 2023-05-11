@@ -70,7 +70,41 @@ subroutine FinalizeMPI
   call MPI_FINALIZE(ierr)
 end subroutine FinalizeMPI
 
-end module  mpimod
+subroutine MPIminfind(x,id)
+  implicit none
+  real(8),intent(inout):: x
+  integer,intent(out):: id
+  real(8):: bufinp(2), bufout(2)
+      
+      bufinp(1) = x
+      bufinp(2) = dble(myid_w)
+
+       call MPI_ALLREDUCE( bufinp(1), bufout(1), 1 &
+     &                   , MPI_2DOUBLE_PRECISION     &
+     &                   , MPI_MINLOC, comm3d, ierr)
+       
+       x = bufout(1)
+       id =  int(bufout(2))
+end subroutine MPIminfind
+
+subroutine MPImaxfind(x,id)
+  implicit none
+  real(8),intent(inout):: x
+  integer,intent(out):: id
+  real(8):: bufinp(2), bufout(2)
+      
+      bufinp(1) = x
+      bufinp(2) = dble(myid_w)
+
+       call MPI_ALLREDUCE( bufinp(1), bufout(1), 1 &
+     &                   , MPI_2DOUBLE_PRECISION     &
+     &                   , MPI_MAXLOC, comm3d, ierr)
+       
+       x = bufout(1)
+       id =  int(bufout(2))
+end subroutine MPImaxfind
+
+end module mpimod
 
 
 !==================================================

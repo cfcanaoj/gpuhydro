@@ -645,6 +645,7 @@ end subroutine Consvvariable
 
       subroutine TimestepControl
       use basicmod
+      use mpimod
       implicit none
       real(8)::dtl1
       real(8)::dtl2
@@ -653,6 +654,8 @@ end subroutine Consvvariable
       real(8)::dtmin
       real(8)::ctot
       integer::i,j,k
+      integer:: theid
+
 !$acc kernels    
       dtmin=1.0d90
 !$acc loop collapse(3) reduction(min:dtmin)  
@@ -672,9 +675,11 @@ end subroutine Consvvariable
       enddo
       enddo
       enddo
-
-      dt = 0.05d0 * dtmin
 !$acc end kernels
+      call MPIminfind(dtmin,theid)
+
+      dt = 0.05d0 *dtmin
+
 !$acc update host (dt)
 
       return
@@ -2029,6 +2034,7 @@ end subroutine Consvvariable
       subroutine EvaulateCh
       use basicmod
       use fluxmod
+      use mpimod
       implicit none
       integer :: i,j,k,n
       real(8),parameter:: drate=0.1d0 ! 
@@ -2037,6 +2043,7 @@ end subroutine Consvvariable
       real(8):: ch1l,ch2l,ch3l,chl,chd
       real(8):: cts,css,cms
       real(8),parameter:: huge=1.0d90 
+      integer:: theid
 
 !$acc kernels
       chd = 0.0d0
@@ -2072,9 +2079,9 @@ end subroutine Consvvariable
       enddo
       enddo
       enddo
-
-      chg      = chd
 !$acc end kernels
+      call MPImaxfind(chd,theid)
+      chg      =      chd
 
       return
       end subroutine  EvaulateCh
