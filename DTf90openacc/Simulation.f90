@@ -1,13 +1,13 @@
-      module commons
+      module basicmod
       implicit none
       integer::nhy
-      integer,parameter::nhymax=1600000
+      integer,parameter::nhymax=3000
       real(8)::time,dt
       data time / 0.0d0 /
       real(8),parameter:: timemax=5.0d0
       real(8),parameter:: dtout=5.0d0/600
 
-      integer,parameter::ngrid=128
+      integer,parameter::ngrid=256
       integer,parameter::mgn=2
       integer,parameter::in=ngrid+2*mgn+1 &
      &                  ,jn=ngrid+2*mgn+1 &
@@ -44,7 +44,7 @@
 !$acc declare create(p,ei,v1,v2,v3,cs)
 !$acc declare create(b1,b2,b3,bp)
 
-      end module commons
+      end module basicmod
       
       module eosmod
       implicit none
@@ -57,7 +57,7 @@
       end module eosmod
     
       module fluxmod
-      use commons, only : in,jn,kn
+      use basicmod, only : in,jn,kn
       implicit none
       real(8):: chg
       integer,parameter::nden=1,nve1=2,nve2=3,nve3=4,nene=5,npre=6,ncsp=7 &
@@ -83,21 +83,26 @@
       end module fluxmod
 
       program main
-      use commons
+      use omp_lib
+      use basicmod
       implicit none
+      real(8)::time_begin,time_end
       logical::is_final
+      logical,parameter::nooutput=.true.
       data is_final /.false./
 
-      write(6,*) "setup grids and fiels"
+      print *, "setup grids and fields"
+      print *, "grid size for x y z",ngrid,ngrid,ngrid
       call GenerateGrid
       call GenerateProblem
       call ConsvVariable
-      write(6,*) "entering main loop"
+      print *, "entering main loop"
 ! main loop
-                                  write(6,*)"step","time","dt"
+      if(.not. nooutput )                        print *,"step","time","dt"
+      time_begin = omp_get_wtime()
       mloop: do nhy=1,nhymax
          call TimestepControl
-         if(mod(nhy,300) .eq. 0 ) write(6,*)nhy,time,dt
+         if(mod(nhy,300) .eq. 0  .and. .not. nooutput ) print *,nhy,time,dt
          call BoundaryCondition
          call StateVevtor
          call EvaulateCh
@@ -108,18 +113,23 @@
          call DampPsi
          call PrimVariable
          time=time+dt
-         call Output(is_final)
+         if(.not. nooutput ) call Output(is_final)
          if(time > timemax) exit mloop
       enddo mloop
 
+      time_end = omp_get_wtime()
+      
+      print *, "sim time [s]:", time_end-time_begin
+      print *, "time/count/cell", (time_end-time_begin)/(ngrid**3)/nhymax
+      
       is_final = .true.
       call Output(is_final)
 
-      write(6,*) "program has been finished"
+      print *, "program has been finished"
       end program main
 
       subroutine GenerateGrid
-      use commons
+      use basicmod
       implicit none
       real(8)::dx,dy,dz
       integer::i,j,k
@@ -157,7 +167,7 @@
       end subroutine GenerateGrid
 
       subroutine GenerateProblem
-      use commons
+      use basicmod
       use eosmod
       implicit none
       integer::i,j,k
@@ -182,7 +192,7 @@
       real(8)::x
 
       call random_seed(size=seedsize)
-      write(6,*)"seed size",seedsize
+      print *,"seed size",seedsize
       allocate(seed(seedsize))  
       call random_seed(get=seed)
 
@@ -243,7 +253,7 @@
       enddo
       enddo
       
-      write(6,*)"initial profile is set"
+      print *,"initial profile is set"
       call BoundaryCondition
 
 !$acc update device (d,v1,v2,v3)
@@ -254,7 +264,7 @@
       end subroutine GenerateProblem
 
       subroutine BoundaryCondition
-      use commons
+      use basicmod
       implicit none
       integer::i,j,k
 
@@ -360,7 +370,7 @@
       end subroutine BoundaryCondition
 
       subroutine ConsvVariable
-      use commons
+      use basicmod
       implicit none
       integer::i,j,k
       
@@ -390,7 +400,7 @@
       end subroutine Consvvariable
 
       subroutine PrimVariable
-      use commons
+      use basicmod
       use eosmod  
       implicit none
       integer::i,j,k
@@ -427,7 +437,7 @@
       end subroutine PrimVariable
 
       subroutine TimestepControl
-      use commons
+      use basicmod
       implicit none
       real(8)::dtl1
       real(8)::dtl2
@@ -464,7 +474,7 @@
       end subroutine TimestepControl
 
       subroutine StateVevtor
-      use commons
+      use basicmod
       use fluxmod
       use eosmod
       implicit none
@@ -554,7 +564,7 @@
       end subroutine MClimiter
 
       subroutine NumericalFlux1
-      use commons, only: is,ie,in,js,je,jn,ks,ke,kn
+      use basicmod, only: is,ie,in,js,je,jn,ks,ke,kn
       use fluxmod
       implicit none
       integer::i,j,k
@@ -741,7 +751,7 @@
          nflux1(mbps,i,j,k) = (0.5d0*(leftst(mubu)+rigtst(mubu)) &
      &                    -0.5d0/chg*(rigtst(mubp)-leftst(mubp)))*chg**2 ! finite volume
 
-!         write(6,*) "bpf1",nflux1(mbps,i,j,k)
+!         print *, "bpf1",nflux1(mbps,i,j,k)
 
       enddo
       enddo
@@ -753,7 +763,7 @@
       end subroutine Numericalflux1
 
       subroutine NumericalFlux2
-      use commons, only: is,ie,in,js,je,jn,ks,ke,kn
+      use basicmod, only: is,ie,in,js,je,jn,ks,ke,kn
       use fluxmod
       implicit none
       integer::i,j,k
@@ -933,7 +943,7 @@
      &                    -0.5d0*chg*(rigtst(mubu)-leftst(mubu))        ! finite volume
          nflux2(mbps,i,j,k) = (0.5d0*(leftst(mubu)+rigtst(mubu)) &
      &                    -0.5d0/chg*(rigtst(mubp)-leftst(mubp)))*chg**2 ! finite volume
-!         write(6,*) "bpf2",nflux2(mbps,i,j,k)
+!         print *, "bpf2",nflux2(mbps,i,j,k)
 
       enddo
       enddo
@@ -945,7 +955,7 @@
       end subroutine Numericalflux2
 
       subroutine NumericalFlux3
-      use commons, only: is,ie,in,js,je,jn,ks,ke,kn
+      use basicmod, only: is,ie,in,js,je,jn,ks,ke,kn
       use fluxmod
       implicit none
       integer::i,j,k
@@ -1700,7 +1710,7 @@
       end subroutine HLLD
 
       subroutine UpdateConsv
-      use commons
+      use basicmod
       use fluxmod
       implicit none
       integer::i,j,k
@@ -1800,7 +1810,7 @@
      &   + nflux3(mbps,i,j,k  ))/(x3a(k+1)-x3a(k)) &
      &      )
 
-!          write(6,*) i,j,k,bp(i,j,k)
+!          print *, i,j,k,bp(i,j,k)
       enddo
       enddo
       enddo
@@ -1810,7 +1820,7 @@
       end subroutine UpdateConsv
 
       subroutine EvaulateCh
-      use commons
+      use basicmod
       use fluxmod
       implicit none
       integer :: i,j,k,n
@@ -1863,7 +1873,7 @@
       end subroutine  EvaulateCh
 
       subroutine DampPsi
-      use commons
+      use basicmod
       use fluxmod
       implicit none
       integer :: i,j,k,n
@@ -1896,7 +1906,7 @@
       end subroutine  DampPsi
 
       subroutine Output
-      use commons
+      use basicmod
       implicit none
       integer::i,j,k
       character(20),parameter::dirname="bindata/"
@@ -1964,13 +1974,13 @@
       write(unitbin) hydout(:,:,:,:)
       close(unitbin)
 
-      write(6,*) "output:",nout,time
+      print *, "output:",nout,time
 
       nout=nout+1
       tout=time
 
       return
-!         write(6,*) "bpf2",nflux2(mbps,i,j,k)
+!         print *, "bpf2",nflux2(mbps,i,j,k)
       end subroutine Output
 
       subroutine makedirs(outdir)
