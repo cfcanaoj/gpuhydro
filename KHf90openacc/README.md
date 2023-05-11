@@ -5,7 +5,7 @@ First you need the setup for ssh-connection to github (see [the instrcution](../
 
 After you login the server, `g00.cfca.nao.ac.jp`, perform the following command.
     
-    cd /gwork0/<username>
+    cd /cfca-work/<username>
     git clone git@github.com:cfcanaoj/gpuhydro gpuhydro
     cd gpuhydro/KHf90openaccc
     
@@ -20,10 +20,10 @@ After you login the server, `g00.cfca.nao.ac.jp`, perform the following command.
 Let us move to analysis server.
 
     ssh <username>@an.cfca.nao.ac.jp
-    cd /gwork0/<username>/gpuhydro/KHf90openaccc
+    cd /cfca-work/<username>/gpuhydro/KHf90openaccc
     module load gnuplot
-    gnuplot dn2dx_ori.plt
-    display figures_ori/dnx00070.png
+    gnuplot dn2dx.plt
+    display figures_ori/dnx00030.png
 
 ## Description of the problem
 
