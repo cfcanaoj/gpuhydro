@@ -9,7 +9,7 @@ all: ${exe}
 ##################################
 # setup for CfCA g00
 ##################################
-fc= mpif90
+fc= mpif90 -mcmodel=medium
 foptopenacc = -Minfo=accel -acc
 fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
