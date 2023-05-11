@@ -14,7 +14,7 @@ After you login the server, `g00.cfca.nao.ac.jp`, perform the following command.
 
 	module load nvhpc
 	make
-	sbatch sj_ori.sh
+	sbatch sj_g00.sh
 
 ## How to see the results
 Let us move to analysis server.
@@ -36,7 +36,7 @@ Run the code with profiler.
 
 In `sj_g00prof.sh' the profiler is called as follows. 
    
-   nsys profile -o khprof ./kh_ori.x
+   nsys profile -o khprof ./kh.x
    
 The profile data is summarized in `khprof.nsys-rep`.
 
