@@ -1,4 +1,4 @@
-      module modbasic
+      module basicmod
       implicit none
       integer::nhy
       integer,parameter::nhymax=20000
@@ -41,10 +41,10 @@
 !$acc declare create(p,ei,v1,v2,v3,cs)
       
 !$acc declare create(gam)
-      end module modbasic
+      end module basicmod
       
       module fluxmod
-      use modbasic, only : in,jn,kn
+      use basicmod, only : in,jn,kn
       implicit none
       integer,parameter::nden=1,nve1=2,nve2=3,nve3=4,nene=5,npre=6
       integer,parameter::nhyd=6
@@ -63,20 +63,21 @@
       end module fluxmod
 
       program main
-      use modbasic
+      use basicmod
       use omp_lib
       implicit none
       real(8)::time_begin,time_end
-      logical:: nooutput=.false.
-      write(6,*) "setup grids and fiels"
+      logical:: nooutput=.true.
+      print *, "setup grids and fields"
+      print *, "grid size for x y",ngrid,ngrid
       call GenerateGrid
       call GenerateProblem
       call ConsvVariable
-      write(6,*) "entering main loop"
+      print *, "entering main loop"
 ! main loop
       time_begin = omp_get_wtime()
       do nhy=1,nhymax
-         if(mod(nhy,100) .eq. 0 .and. .not. nooutput)write(6,*)nhy,time,dt
+         if(mod(nhy,100) .eq. 0 .and. .not. nooutput)print *,nhy,time,dt
          call TimestepControl
          call BoundaryCondition
          call StateVevtor
@@ -88,14 +89,14 @@
          if(.not. nooutput) call Output
       enddo
       time_end = omp_get_wtime()
-      write(6,*) "sim time [s]:", time_end-time_begin
-      write(6,*) "time/count/cell", (time_end-time_begin)/(ngrid**2)/nhymax
+      print *, "sim time [s]:", time_end-time_begin
+      print *, "time/count/cell", (time_end-time_begin)/(ngrid**2)/nhymax
       
-      write(6,*) "program has been finished"
+      print *, "program has been finished"
       end program main
 
       subroutine GenerateGrid
-      use modbasic
+      use basicmod
       implicit none
       real(8)::dx,dy
       integer::i,j,k
@@ -122,7 +123,7 @@
       end subroutine GenerateGrid
 
       subroutine GenerateProblem
-      use modbasic
+      use basicmod
       implicit none
       integer::i,j,k
       real(8) :: rho1,rho2,Lsm,u1,u2
@@ -181,7 +182,7 @@
       end subroutine GenerateProblem
 
       subroutine BoundaryCondition
-      use modbasic
+      use basicmod
       implicit none
       integer::i,j,k
 
@@ -239,7 +240,7 @@
       end subroutine BoundaryCondition
 
       subroutine ConsvVariable
-      use modbasic
+      use basicmod
       implicit none
       integer::i,j,k
 !$acc kernels      
@@ -264,7 +265,7 @@
       end subroutine Consvvariable
 
       subroutine PrimVariable
-      use modbasic
+      use basicmod
       implicit none
       integer::i,j,k
       
@@ -293,7 +294,7 @@
       end subroutine PrimVariable
 
       subroutine TimestepControl
-      use modbasic
+      use basicmod
       implicit none
       real(8)::dtl1
       real(8)::dtl2
@@ -324,7 +325,7 @@
       end subroutine TimestepControl
 
       subroutine StateVevtor
-      use modbasic
+      use basicmod
       use fluxmod
       implicit none
       integer::i,j,k
@@ -402,7 +403,7 @@
       end subroutine MClimiter
 
       subroutine NumericalFlux1
-      use modbasic, only: is,ie,in,js,je,jn,ks,ke,kn,gam
+      use basicmod, only: is,ie,in,js,je,jn,ks,ke,kn,gam
       use fluxmod
       implicit none
       integer::i,j,k
@@ -516,7 +517,7 @@
       end subroutine Numericalflux1
 
       subroutine NumericalFlux2
-      use modbasic, only: is,ie,in,js,je,jn,ks,ke,kn,gam
+      use basicmod, only: is,ie,in,js,je,jn,ks,ke,kn,gam
       use fluxmod
       implicit none
       integer::i,j,k
@@ -666,7 +667,7 @@
       end subroutine HLLE
 
       subroutine UpdateConsv
-      use modbasic
+      use basicmod
       use fluxmod
       implicit none
       integer::i,j,k
@@ -725,10 +726,10 @@
       end subroutine UpdateConsv
 
       subroutine Output
-      use modbasic
+      use basicmod
       implicit none
       integer::i,j,k
-      character(20),parameter::dirname="snapshots_ori/"
+      character(20),parameter::dirname="snapshots/"
       character(40)::filename
       real(8),save::tout
       data tout / 0.0d0 / 
@@ -759,7 +760,7 @@
       enddo
       close(unitout)
 
-      write(6,*) "output:",nout,time
+      print *, "output:",nout,time
 
       nout=nout+1
       tout=time
