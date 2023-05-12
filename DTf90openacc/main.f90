@@ -7,7 +7,7 @@
       real(8),parameter:: timemax=5.0d0
       real(8),parameter:: dtout=5.0d0/600
 
-      integer,parameter::ngrid=128
+      integer,parameter::ngrid=256
       integer,parameter::mgn=2
       integer,parameter::in=ngrid+2*mgn+1 &
      &                  ,jn=ngrid+2*mgn+1 &
@@ -30,6 +30,8 @@
       real(8),dimension(in,jn,kn)::p,ei,v1,v2,v3,cs
       real(8),dimension(in,jn,kn)::b1,b2,b3,bp
 
+      integer,parameter:: nbc=9
+      
 !$acc declare create(ngrid,mgn)
 !$acc declare create(in,jn,kn)
 !$acc declare create(is,js,ks)
@@ -44,6 +46,8 @@
 !$acc declare create(p,ei,v1,v2,v3,cs)
 !$acc declare create(b1,b2,b3,bp)
 
+!$acc declare create(nbc)
+      
       end module basicmod
       
       module eosmod
@@ -82,89 +86,111 @@
 !$acc declare create(svc,nflux1,nflux2,nflux3)
       end module fluxmod
 
-      program main
-      use omp_lib
-      use basicmod
-      implicit none
-      real(8)::time_begin,time_end
-      logical::is_final
-      logical,parameter::nooutput=.true.
-      data is_final /.false./
+program main
+  use omp_lib
+  use basicmod
+  use mpimod
+  implicit none
+  real(8)::time_begin,time_end
+  logical::is_final
+  logical,parameter::nooutput=.true.
+  data is_final /.false./
 
-      print *, "setup grids and fields"
-      print *, "grid size for x y z",ngrid,ngrid,ngrid
-      call GenerateGrid
-      call GenerateProblem
-      call ConsvVariable
-      print *, "entering main loop"
+  call InitializeMPI
+  print *, "setup grids and fields"
+  if(myid_w == 0) print *, "grid size for x y z",ngrid*ntiles(1),ngrid*ntiles(2),ngrid*ntiles(3)
+  call GenerateGrid
+  call GenerateProblem
+  call ConsvVariable
+  print *, "entering main loop"
 ! main loop
-      if(.not. nooutput )                        print *,"step","time","dt"
-      time_begin = omp_get_wtime()
-      mloop: do nhy=1,nhymax
-         call TimestepControl
-         if(mod(nhy,300) .eq. 0  .and. .not. nooutput ) print *,nhy,time,dt
-         call BoundaryCondition
-         call StateVevtor
-         call EvaulateCh
-         call NumericalFlux1
-         call NumericalFlux2
-         call NumericalFlux3
-         call UpdateConsv
-         call DampPsi
-         call PrimVariable
-         time=time+dt
-         if(.not. nooutput ) call Output(is_final)
-         if(time > timemax) exit mloop
-      enddo mloop
+  if(myid_w == 0 .and. .not. nooutput )                        print *,"step","time","dt"
+  time_begin = omp_get_wtime()
+  mloop: do nhy=1,nhymax
+     call TimestepControl
+     if(mod(nhy,300) .eq. 0  .and. .not. nooutput ) print *,nhy,time,dt
+     call BoundaryCondition
+     call StateVevtor
+     call EvaulateCh
+     call NumericalFlux1
+     call NumericalFlux2
+     call NumericalFlux3
+     call UpdateConsv
+     call DampPsi
+     call PrimVariable
+     time=time+dt
+     if(myid_w == 0 .and. .not. nooutput ) call Output(.false.)
+     if(time > timemax) exit mloop
+  enddo mloop
 
-      time_end = omp_get_wtime()
+  time_end = omp_get_wtime()
       
-      print *, "sim time [s]:", time_end-time_begin
-      print *, "time/count/cell", (time_end-time_begin)/(ngrid**3)/nhymax
+  print *, "sim time [s]:", time_end-time_begin
+  print *, "time/count/cell", (time_end-time_begin)/(ngrid**3)/nhymax
+  
+  is_final = .true.
+  call Output(.true.)
+
+  call FinalizeMPI
+  if(myid_w == 0) print *, "program has been finished"
+  
+end program main
+
+
+subroutine GenerateGrid
+  use basicmod
+  use mpimod
+  implicit none
+  real(8)::dx,dy,dz
+  real(8)::x1minloc,x1maxloc
+  real(8)::x2minloc,x2maxloc
+  real(8)::x3minloc,x3maxloc
+  integer::i,j,k
+  
+  ! x coordinates
       
-      is_final = .true.
-      call Output(is_final)
-
-      print *, "program has been finished"
-      end program main
-
-      subroutine GenerateGrid
-      use basicmod
-      implicit none
-      real(8)::dx,dy,dz
-      integer::i,j,k
-! x coordinates
-      dx=(x1max-x1min)/dble(ngrid)
-      do i=1,in
-         x1a(i) = dx*(i-(mgn+1))+x1min
-      enddo
-      do i=1,in-1
-         x1b(i) = 0.5d0*(x1a(i+1)+x1a(i))
-      enddo
+  x1minloc = x1min + (x1max-x1min)/ntiles(1)* coords(1)
+  x1maxloc = x1min + (x1max-x1min)/ntiles(1)*(coords(1)+1)
+  
+  dx=(x1maxloc-x1minloc)/dble(ngrid)
+  do i=1,in
+     x1a(i) = dx*(i-(mgn+1))+x1minloc
+  enddo
+  do i=1,in-1
+     x1b(i) = 0.5d0*(x1a(i+1)+x1a(i))
+  enddo
  
-! y coordinates
-      dy=(x2max-x2min)/dble(ngrid)
-      do j=1,jn
-         x2a(j) = dy*(j-(mgn+1))+x2min
-      enddo
+  ! y coordinates
+  x2minloc = x2min + (x2max-x2min)/ntiles(2)* coords(2)
+  x2maxloc = x2min + (x2max-x2min)/ntiles(2)*(coords(2)+1)
+ 
+  dy=(x2maxloc-x2minloc)/dble(ngrid)
+  do j=1,jn
+     x2a(j) = dy*(j-(mgn+1))+x2minloc
+  enddo
 
-      do j=1,jn-1
-         x2b(j) = 0.5d0*(x2a(j+1)+x2a(j))
-      enddo
-
-      dz=(x3max-x3min)/ngrid
-      do k=1,kn
-         x3a(k) = dz*(k-(mgn+1))+x3min
-      enddo
-      do k=1,kn-1
-         x3b(k) = 0.5d0*(x3a(k+1)+x3a(k))
-      enddo
+  do j=1,jn-1
+     x2b(j) = 0.5d0*(x2a(j+1)+x2a(j))
+  enddo
+  
+  ! z coordinates
+  x3minloc = x3min + (x3max-x3min)/ntiles(3)* coords(3)
+  x3maxloc = x3min + (x3max-x3min)/ntiles(3)*(coords(3)+1)
+ 
+  dz=(x3maxloc-x3minloc)/ngrid
+  do k=1,kn
+     x3a(k) = dz*(k-(mgn+1))+x3minloc
+  enddo
+  do k=1,kn-1
+     x3b(k) = 0.5d0*(x3a(k+1)+x3a(k))
+  enddo
 
 !$acc update device (x1a,x1b)
 !$acc update device (x2a,x2b)
 !$acc update device (x3a,x3b)
-      return
-      end subroutine GenerateGrid
+  
+  return
+end subroutine GenerateGrid
 
       subroutine GenerateProblem
       use basicmod
@@ -263,112 +289,362 @@
       return
       end subroutine GenerateProblem
 
-      subroutine BoundaryCondition
-      use basicmod
-      implicit none
-      integer::i,j,k
+subroutine BoundaryCondition
+  use basicmod
+  implicit none
+  real(8),dimension(mgn,jn,kn,nbc):: varsendXstt,varsendXend
+  real(8),dimension(in,mgn,kn,nbc):: varsendYstt,varsendYend
+  real(8),dimension(in,jn,mgn,nbc):: varsendZstt,varsendZend
+  real(8),dimension(mgn,jn,kn,nbc):: varrecvXstt,varrecvXend
+  real(8),dimension(in,mgn,kn,nbc):: varrecvYstt,varrecvYend
+  real(8),dimension(in,jn,mgn,nbc):: varrecvZstt,varrecvZend
+  integer::i,j,k
+!$acc declare create(varsendXstt,varsendXend)
+!$acc declare create(varsendYstt,varsendYend)
+!$acc declare create(varsendZstt,varsendZend)
+!$acc declare create(varrecvXstt,varrecvXend)
+!$acc declare create(varrecvYstt,varrecvYend)
+!$acc declare create(varrecvZstt,varrecvZend)
+
 
 !$acc kernels
-      do k=1,kn-1
-      do j=1,jn-1
-      do i=1,mgn
-           d(i,j,k) =  d(ie-mgn+i,j,k)
-          ei(i,j,k) = ei(ie-mgn+i,j,k)
-          v1(i,j,k) = v1(ie-mgn+i,j,k)
-          v2(i,j,k) = v2(ie-mgn+i,j,k)
-          v3(i,j,k) = v3(ie-mgn+i,j,k)
-          b1(i,j,k) = b1(ie-mgn+i,j,k)
-          b2(i,j,k) = b2(ie-mgn+i,j,k)
-          b3(i,j,k) = b3(ie-mgn+i,j,k)
-          bp(i,j,k) = bp(ie-mgn+i,j,k)
-      enddo
-      enddo
-      enddo
+!$acc loop collapse(3) independent
+  do k=1,kn-1
+  do j=1,jn-1
+  do i=1,mgn
+     varsendXend(i,j,k,1) =  d(ie-mgn+i,j,k)
+     varsendXend(i,j,k,2) = ei(ie-mgn+i,j,k)
+     varsendXend(i,j,k,3) = v1(ie-mgn+i,j,k)
+     varsendXend(i,j,k,4) = v2(ie-mgn+i,j,k)
+     varsendXend(i,j,k,5) = v3(ie-mgn+i,j,k)
+     varsendXend(i,j,k,6) = b1(ie-mgn+i,j,k)
+     varsendXend(i,j,k,7) = b2(ie-mgn+i,j,k)
+     varsendXend(i,j,k,8) = b3(ie-mgn+i,j,k)
+     varsendXend(i,j,k,9) = bp(ie-mgn+i,j,k)
 
-      do k=1,kn-1
-      do j=1,jn-1
-      do i=1,mgn
-           d(ie+i,j,k) =  d(is+i-1,j,k)
-          ei(ie+i,j,k) = ei(is+i-1,j,k)
-          v1(ie+i,j,k) = v1(is+i-1,j,k)
-          v2(ie+i,j,k) = v2(is+i-1,j,k)
-          v3(ie+i,j,k) = v3(is+i-1,j,k)
-          b1(ie+i,j,k) = b1(is+i-1,j,k)
-          b2(ie+i,j,k) = b2(is+i-1,j,k)
-          b3(ie+i,j,k) = b3(is+i-1,j,k)
-          bp(ie+i,j,k) = bp(is+i-1,j,k)
-      enddo
-      enddo
-      enddo
+     varsendXstt(i,j,k,1) =  d(  is+i-1,j,k)
+     varsendXstt(i,j,k,2) = ei(  is+i-1,j,k)
+     varsendXstt(i,j,k,3) = v1(  is+i-1,j,k)
+     varsendXstt(i,j,k,4) = v2(  is+i-1,j,k)
+     varsendXstt(i,j,k,5) = v3(  is+i-1,j,k)
+     varsendXstt(i,j,k,6) = b1(  is+i-1,j,k)
+     varsendXstt(i,j,k,7) = b2(  is+i-1,j,k)
+     varsendXstt(i,j,k,8) = b3(  is+i-1,j,k)
+     varsendXstt(i,j,k,9) = bp(  is+i-1,j,k)
+  enddo
+  enddo
+  enddo
 
-      do k=1,kn-1
-      do i=1,in-1
-      do j=1,mgn
-           d(i,j,k) =  d(i,je-mgn+j,k)
-          ei(i,j,k) = ei(i,je-mgn+j,k)
-          v1(i,j,k) = v1(i,je-mgn+j,k)
-          v2(i,j,k) = v2(i,je-mgn+j,k)
-          v3(i,j,k) = v3(i,je-mgn+j,k)
-          b1(i,j,k) = b1(i,je-mgn+j,k)
-          b2(i,j,k) = b2(i,je-mgn+j,k)
-          b3(i,j,k) = b3(i,je-mgn+j,k)
-          bp(i,j,k) = bp(i,je-mgn+j,k)
-      enddo
-      enddo
-      enddo
+!$acc loop collapse(3) independent
+  do k=1,kn-1
+  do i=1,in-1
+  do j=1,mgn
+     varsendYend(i,j,k,1) =  d(i,je-mgn+j,k)
+     varsendYend(i,j,k,2) = ei(i,je-mgn+j,k)
+     varsendYend(i,j,k,3) = v1(i,je-mgn+j,k)
+     varsendYend(i,j,k,4) = v2(i,je-mgn+j,k)
+     varsendYend(i,j,k,5) = v3(i,je-mgn+j,k)
+     varsendYend(i,j,k,6) = b1(i,je-mgn+j,k)
+     varsendYend(i,j,k,7) = b2(i,je-mgn+j,k)
+     varsendYend(i,j,k,8) = b3(i,je-mgn+j,k)
+     varsendYend(i,j,k,9) = bp(i,je-mgn+j,k)
 
-      do k=1,kn-1
-      do i=1,in-1
-      do j=1,mgn
-           d(i,je+j,k) =  d(i,js+j-1,k)
-          ei(i,je+j,k) = ei(i,js+j-1,k)
-          v1(i,je+j,k) = v1(i,js+j-1,k)
-          v2(i,je+j,k) = v2(i,js+j-1,k)
-          v3(i,je+j,k) = v3(i,js+j-1,k)
-          b1(i,je+j,k) = b1(i,js+j-1,k)
-          b2(i,je+j,k) = b2(i,js+j-1,k)
-          b3(i,je+j,k) = b3(i,js+j-1,k)
-          bp(i,je+j,k) = bp(i,js+j-1,k)
-      enddo
-      enddo
-      enddo
+     varsendYstt(i,j,k,1) =  d(i,  js+j-1,k)
+     varsendYstt(i,j,k,2) = ei(i,  js+j-1,k)
+     varsendYstt(i,j,k,3) = v1(i,  js+j-1,k)
+     varsendYstt(i,j,k,4) = v2(i,  js+j-1,k)
+     varsendYstt(i,j,k,5) = v3(i,  js+j-1,k)
+     varsendYstt(i,j,k,6) = b1(i,  js+j-1,k)
+     varsendYstt(i,j,k,7) = b2(i,  js+j-1,k)
+     varsendYstt(i,j,k,8) = b3(i,  js+j-1,k)
+     varsendYstt(i,j,k,9) = bp(i,  js+j-1,k)
+  enddo
+  enddo
+  enddo
 
-      do j=1,jn-1
-      do i=1,in-1
-      do k=1,mgn
-           d(i,j,k) =  d(i,j,ke-mgn+k)
-          ei(i,j,k) = ei(i,j,ke-mgn+k)
-          v1(i,j,k) = v1(i,j,ke-mgn+k)
-          v2(i,j,k) = v2(i,j,ke-mgn+k)
-          v3(i,j,k) = v3(i,j,ke-mgn+k)
-          b1(i,j,k) = b1(i,j,ke-mgn+k)
-          b2(i,j,k) = b2(i,j,ke-mgn+k)
-          b3(i,j,k) = b3(i,j,ke-mgn+k)
-          bp(i,j,k) = bp(i,j,ke-mgn+k)
-      enddo
-      enddo
-      enddo
+!$acc loop collapse(3) independent
+  do j=1,jn-1
+  do i=1,in-1
+  do k=1,mgn
+     varsendZend(i,j,k,1) =  d(i,j,ke-mgn+k)
+     varsendZend(i,j,k,2) = ei(i,j,ke-mgn+k)
+     varsendZend(i,j,k,3) = v1(i,j,ke-mgn+k)
+     varsendZend(i,j,k,4) = v2(i,j,ke-mgn+k)
+     varsendZend(i,j,k,5) = v3(i,j,ke-mgn+k)
+     varsendZend(i,j,k,6) = b1(i,j,ke-mgn+k)
+     varsendZend(i,j,k,8) = b3(i,j,ke-mgn+k)
+     varsendZend(i,j,k,9) = bp(i,j,ke-mgn+k)
 
-      do j=1,jn-1
-      do i=1,in-1
-      do k=1,mgn
-           d(i,j,ke+k) =  d(i,j,ks+k-1)
-          ei(i,j,ke+k) = ei(i,j,ks+k-1)
-          v1(i,j,ke+k) = v1(i,j,ks+k-1)
-          v2(i,j,ke+k) = v2(i,j,ks+k-1)
-          v3(i,j,ke+k) = v3(i,j,ks+k-1)
-          b1(i,j,ke+k) = b1(i,j,ks+k-1)
-          b2(i,j,ke+k) = b2(i,j,ks+k-1)
-          b3(i,j,ke+k) = b3(i,j,ks+k-1)
-          bp(i,j,ke+k) = bp(i,j,ks+k-1)
-      enddo
-      enddo
-      enddo
+     varsendZstt(i,j,k,1) =  d(i,j,ks+k-1  )
+     varsendZstt(i,j,k,2) = ei(i,j,ks+k-1  )
+     varsendZstt(i,j,k,3) = v1(i,j,ks+k-1  )
+     varsendZstt(i,j,k,4) = v2(i,j,ks+k-1  )
+     varsendZstt(i,j,k,5) = v3(i,j,ks+k-1  )
+     varsendZstt(i,j,k,6) = b1(i,j,ks+k-1  )
+     varsendZstt(i,j,k,7) = b2(i,j,ks+k-1  )
+     varsendZstt(i,j,k,8) = b3(i,j,ks+k-1  )
+     varsendZstt(i,j,k,9) = bp(i,j,ks+k-1  )
+  enddo
+  enddo
+  enddo
 !$acc end kernels
 
-      return
-      end subroutine BoundaryCondition
+  call XbcSendRecv(varsendXstt,varsendXend,varrecvXstt,varrecvXend)
+  call YbcSendRecv(varsendYstt,varsendYend,varrecvYstt,varrecvYend)
+  call ZbcSendRecv(varsendZstt,varsendZend,varrecvZstt,varrecvZend)
+  
+!$acc kernels
+!$acc loop collapse(3) independent
+  do k=1,kn-1
+  do j=1,jn-1
+  do i=1,mgn
+      d(i,j,k) = varrecvXstt(i,j,k,1)
+     ei(i,j,k) = varrecvXstt(i,j,k,2)
+     v1(i,j,k) = varrecvXstt(i,j,k,3)
+     v2(i,j,k) = varrecvXstt(i,j,k,4)
+     v3(i,j,k) = varrecvXstt(i,j,k,5)
+     b1(i,j,k) = varrecvXstt(i,j,k,6)
+     b2(i,j,k) = varrecvXstt(i,j,k,7)
+     b3(i,j,k) = varrecvXstt(i,j,k,8)
+     bp(i,j,k) = varrecvXstt(i,j,k,9)
+     
+      d(ie+i,j,k) = varrecvXend(i,j,k,1)
+     ei(ie+i,j,k) = varrecvXend(i,j,k,2)
+     v1(ie+i,j,k) = varrecvXend(i,j,k,3)
+     v2(ie+i,j,k) = varrecvXend(i,j,k,4)
+     v3(ie+i,j,k) = varrecvXend(i,j,k,5)
+     b1(ie+i,j,k) = varrecvXend(i,j,k,6)
+     b2(ie+i,j,k) = varrecvXend(i,j,k,7)
+     b3(ie+i,j,k) = varrecvXend(i,j,k,8)
+     bp(ie+i,j,k) = varrecvXend(i,j,k,9)
+  enddo
+  enddo
+  enddo
 
+!$acc loop collapse(3) independent
+  do k=1,kn-1
+  do i=1,in-1
+  do j=1,mgn
+      d(i,j,k) = varrecvYstt(i,j,k,1)
+     ei(i,j,k) = varrecvYstt(i,j,k,2)
+     v1(i,j,k) = varrecvYstt(i,j,k,3)
+     v2(i,j,k) = varrecvYstt(i,j,k,4)
+     v3(i,j,k) = varrecvYstt(i,j,k,5)
+     b1(i,j,k) = varrecvYstt(i,j,k,6)
+     b2(i,j,k) = varrecvYstt(i,j,k,7)
+     b3(i,j,k) = varrecvYstt(i,j,k,8)
+     bp(i,j,k) = varrecvYstt(i,j,k,9)
+     
+      d(i,je+j,k) = varrecvYend(i,j,k,1)
+     ei(i,je+j,k) = varrecvYend(i,j,k,2)
+     v1(i,je+j,k) = varrecvYend(i,j,k,3)
+     v2(i,je+j,k) = varrecvYend(i,j,k,4)
+     v3(i,je+j,k) = varrecvYend(i,j,k,5)
+     b1(i,je+j,k) = varrecvYend(i,j,k,6)
+     b2(i,je+j,k) = varrecvYend(i,j,k,7)
+     b3(i,je+j,k) = varrecvYend(i,j,k,8)
+     bp(i,je+j,k) = varrecvYend(i,j,k,9)
+  enddo
+  enddo
+  enddo
+
+
+!$acc loop collapse(3) independent
+  do j=1,jn-1
+  do i=1,in-1
+  do k=1,mgn
+      d(i,j,k) = varrecvZstt(i,j,k,1)
+     ei(i,j,k) = varrecvZstt(i,j,k,2)
+     v1(i,j,k) = varrecvZstt(i,j,k,3)
+     v2(i,j,k) = varrecvZstt(i,j,k,4)
+     v3(i,j,k) = varrecvZstt(i,j,k,5)
+     b1(i,j,k) = varrecvZstt(i,j,k,6)
+     b2(i,j,k) = varrecvZstt(i,j,k,7)
+     b3(i,j,k) = varrecvZstt(i,j,k,8)
+     bp(i,j,k) = varrecvZstt(i,j,k,9)
+     
+      d(i,j,ke+k) = varrecvZend(i,j,k,1)
+     ei(i,j,ke+k) = varrecvZend(i,j,k,2)
+     v1(i,j,ke+k) = varrecvZend(i,j,k,3)
+     v2(i,j,ke+k) = varrecvZend(i,j,k,4)
+     v3(i,j,ke+k) = varrecvZend(i,j,k,5)
+     b1(i,j,ke+k) = varrecvZend(i,j,k,6)
+     b2(i,j,ke+k) = varrecvZend(i,j,k,7)
+     b3(i,j,ke+k) = varrecvZend(i,j,k,8)
+     bp(i,j,ke+k) = varrecvZend(i,j,k,9)
+  enddo
+  enddo
+  enddo
+!$acc end kernels
+
+  
+  return
+end subroutine BoundaryCondition
+
+subroutine XbcSendRecv(varsendXstt,varsendXend,varrecvXstt,varrecvXend)
+  use   mpimod
+  use basicmod
+  use mpi
+  implicit none
+  real(8),dimension(mgn,jn,kn,nbc),intent(in) ::varsendXstt,varsendXend
+  real(8),dimension(mgn,jn,kn,nbc),intent(out)::varrecvXstt,varrecvXend
+  integer::i,j,k,n
+  
+  if(ntiles(1) == 1) then
+!$acc kernels
+!$acc loop collapse(4) independent
+  do n=1,nbc
+  do k=1,kn-1
+  do j=1,jn-1
+  do i=1,mgn
+     varrecvXstt(i,j,k,n) = varsendXend(i,j,k,n)
+     varrecvXend(i,j,k,n) = varsendXstt(i,j,k,n)
+  enddo
+  enddo
+  enddo
+  enddo
+!$acc end kernels
+  
+  else
+
+!$acc host_data use_device(varsendXstt,varsendXend,varrecvXstt,varrecvXend)
+     nreq = nreq + 1         
+     call MPI_IRECV(varrecvXstt,mgn*jn*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n1m,1100, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_ISEND(varsendXstt,mgn*jn*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n1m, 1200, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_IRECV(varrecvXend,mgn*jn*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n1p,1200, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_ISEND(varsendXend,mgn*jn*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n1p, 1100, comm3d, req(nreq), ierr)
+
+     if(nreq .ne. 0) call MPI_WAITALL ( nreq, req, stat, ierr )
+     nreq = 0
+!$acc end host_data
+
+  endif
+
+  return
+end subroutine XbcSendRecv
+
+subroutine YbcSendRecv(varsendYstt,varsendYend,varrecvYstt,varrecvYend)
+  use   mpimod
+  use basicmod
+  use mpi
+  implicit none
+  real(8),dimension(in,mgn,kn,nbc),intent(in) ::varsendYstt,varsendYend
+  real(8),dimension(in,mgn,kn,nbc),intent(out)::varrecvYstt,varrecvYend
+  integer::i,j,k,n
+
+  if(ntiles(2) == 1) then
+!$acc kernels
+!$acc loop collapse(4) independent
+  do n=1,nbc
+  do k=1,kn-1
+  do j=1,mgn
+  do i=1,in-1
+     varrecvYstt(i,j,k,n) = varsendYend(i,j,k,n)
+     varrecvYend(i,j,k,n) = varsendYstt(i,j,k,n)
+  enddo
+  enddo
+  enddo
+  enddo
+!$acc end kernels
+  else
+
+!$acc host_data use_device(varsendYstt,varsendYend,varrecvYstt,varrecvYend)
+     nreq = nreq + 1         
+     call MPI_IRECV(varrecvYstt,mgn*in*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n2m, 2100, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_ISEND(varsendYstt,mgn*in*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n2m, 2200, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_IRECV(varrecvYend,mgn*in*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n2p,2200, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_ISEND(varsendYend,mgn*in*kn*nbc &
+    & , MPI_DOUBLE &
+    & , n2p, 2100, comm3d, req(nreq), ierr)
+
+     if(nreq .ne. 0) call MPI_WAITALL ( nreq, req, stat, ierr )
+     nreq = 0
+!$acc end host_data
+  endif
+
+  return
+end subroutine YbcSendRecv
+
+subroutine ZbcSendRecv(varsendZstt,varsendZend,varrecvZstt,varrecvZend)
+  use   mpimod
+  use basicmod
+  use mpi
+  implicit none
+  real(8),dimension(in,jn,mgn,nbc),intent(in) ::varsendZstt,varsendZend
+  real(8),dimension(in,jn,mgn,nbc),intent(out)::varrecvZstt,varrecvZend
+  integer::i,j,k,n
+  
+  if(ntiles(3) == 1) then
+!$acc kernels
+!$acc loop collapse(4) independent
+  do n=1,nbc
+  do k=1,mgn
+  do j=1,jn-1
+  do i=1,in-1
+     varrecvZstt(i,j,k,n) = varsendZend(i,j,k,n)
+     varrecvZend(i,j,k,n) = varsendZstt(i,j,k,n)
+  enddo
+  enddo
+  enddo
+  enddo
+!$acc end kernels
+  else
+
+!$acc host_data use_device(varsendZstt,varsendZend,varrecvZstt,varrecvZend)
+     nreq = nreq + 1         
+     call MPI_IRECV(varrecvZstt,mgn*in*jn*nbc &
+    & , MPI_DOUBLE &
+    & , n3m, 3100, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_ISEND(varsendZstt,mgn*in*jn*nbc &
+    & , MPI_DOUBLE &
+    & , n3m, 3200, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_IRECV(varrecvZend,mgn*in*jn*nbc &
+    & , MPI_DOUBLE &
+    & , n3p, 3200, comm3d, req(nreq), ierr)
+
+     nreq = nreq + 1
+     call MPI_ISEND(varsendZend,mgn*in*jn*nbc &
+    & , MPI_DOUBLE &
+    & , n3p, 3100, comm3d, req(nreq), ierr)
+
+     if(nreq .ne. 0) call MPI_WAITALL ( nreq, req, stat, ierr )
+     nreq = 0
+!$acc end host_data
+  endif
+
+  return
+end subroutine ZbcSendRecv
+      
       subroutine ConsvVariable
       use basicmod
       implicit none
@@ -436,22 +712,25 @@
       return
       end subroutine PrimVariable
 
-      subroutine TimestepControl
-      use basicmod
-      implicit none
-      real(8)::dtl1
-      real(8)::dtl2
-      real(8)::dtl3
-      real(8)::dtlocal
-      real(8)::dtmin
-      real(8)::ctot
-      integer::i,j,k
+subroutine TimestepControl
+  use basicmod
+  use mpimod      
+  implicit none
+  real(8)::dtl1
+  real(8)::dtl2
+  real(8)::dtl3
+  real(8)::dtlocal
+  real(8)::dtmin
+  real(8)::ctot
+  integer::i,j,k
+  integer::theid
+!$acc declare create(dtmin,theid)
 !$acc kernels    
-      dtmin=1.0d90
+  dtmin=1.0d90
 !$acc loop collapse(3) reduction(min:dtmin)  
-      do k=ks,ke
-      do j=js,je
-      do i=is,ie
+  do k=ks,ke
+  do j=js,je
+  do i=is,ie
          ctot = sqrt(cs(i,j,k)**2 &
      &            +( b1(i,j,k)**2 &
      &              +b2(i,j,k)**2 &
@@ -462,16 +741,19 @@
          dtl3 =(x3a(k+1)-x3a(k))/(abs(v3(i,j,k)) + ctot)
          dtlocal = min (dtl1,dtl2,dtl3)
          if(dtlocal .lt. dtmin) dtmin = dtlocal
-      enddo
-      enddo
-      enddo
-
-      dt = 0.05d0 * dtmin
+  enddo
+  enddo
+  enddo
 !$acc end kernels
+  call MPIminfind(dtmin,theid)
+!$acc kernels
+  dt = 0.05d0 * dtmin
+!$acc end kernels
+
 !$acc update host (dt)
 
-      return
-      end subroutine TimestepControl
+  return
+end subroutine TimestepControl
 
       subroutine StateVevtor
       use basicmod
@@ -1817,29 +2099,30 @@
 !$acc end kernels
 
       return
-      end subroutine UpdateConsv
-
-      subroutine EvaulateCh
-      use basicmod
-      use fluxmod
-      implicit none
-      integer :: i,j,k,n
-      real(8),parameter:: drate=0.1d0 ! 
+    end subroutine UpdateConsv
+subroutine EvaulateCh
+  use basicmod
+  use fluxmod
+  use mpimod
+  implicit none
+  integer :: i,j,k,n
+  real(8),parameter:: drate=0.1d0 ! 
 ! local variable
-      real(8):: dh1l,dh2l,dh3l,dhl,dhd
-      real(8):: ch1l,ch2l,ch3l,chl,chd
-      real(8):: cts,css,cms
-      real(8),parameter:: huge=1.0d90 
-
+  real(8):: dh1l,dh2l,dh3l,dhl,dhd
+  real(8):: ch1l,ch2l,ch3l,chl,chd
+  real(8):: cts,css,cms
+  real(8),parameter:: huge=1.0d90
+  integer::theid
+!$acc declare create(chd,theid)
 !$acc kernels
-      chd = 0.0d0
-      ch1l = 0.0d0; ch2l = 0.0d0; ch3l = 0.0d0
-      dhd = huge
-      dh1l =  huge; dh2l =  huge; dh3l =  huge
+  chd = 0.0d0
+  ch1l = 0.0d0; ch2l = 0.0d0; ch3l = 0.0d0
+  dhd = huge
+  dh1l =  huge; dh2l =  huge; dh3l =  huge
 !$acc loop collapse(3) reduction(max:chd)
-      do k=ks,ke
-      do j=js,je
-      do i=is,ie
+  do k=ks,ke
+  do j=js,je
+  do i=is,ie
             css  = svc(ncsp,i,j,k)**2
             cts  = css  &! cs^2+c_a^2
      &          + (svc(nbm1,i,j,k)**2+svc(nbm2,i,j,k)**2+svc(nbm3,i,j,k)**2)/svc(nden,i,j,k)
@@ -1862,15 +2145,17 @@
          dhl     = min(dh1l,dh2l,dh3l)
          chd     = max(chl,chd)
          dhd     = min(dhl,dhd)
-      enddo
-      enddo
-      enddo
-
-      chg      = chd
+  enddo
+  enddo
+  enddo
+!$acc end kernels
+  call MPImaxfind(chd,theid)
+!$acc kernels
+  chg      =      chd
 !$acc end kernels
 
-      return
-      end subroutine  EvaulateCh
+  return
+end subroutine  EvaulateCh
 
       subroutine DampPsi
       use basicmod
