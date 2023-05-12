@@ -205,7 +205,7 @@ contains
      &     gridX, &  ! the data
      & Ssize(2)*nvarg, &! total data number
      & MPI_DOUBLE_PRECISION, & 
-     & stat, &
+     & mpi_status_ignore, &
      & ierr)
       call MPI_FILE_CLOSE(unitg1d,ierr)
       
@@ -252,7 +252,7 @@ contains
      &     gridY,  &! the data
      & Ssize(2)*nvarg,& ! total data number
      & MPI_DOUBLE_PRECISION,&
-     & stat,&
+     & mpi_status_ignore, &
      & ierr)
       call MPI_FILE_CLOSE(unitg2d,ierr)
 
@@ -294,7 +294,7 @@ contains
      &    gridZ, & ! the data
      & Ssize(2)*nvarg,& ! total data number
      & MPI_DOUBLE_PRECISION, &
-     & stat, &
+     & mpi_status_ignore, &
      & ierr)
       call MPI_FILE_CLOSE(unitg3d,ierr)
       
@@ -349,8 +349,8 @@ contains
      &   unitd3d,  &! file path
      &    data3D,  &! the data
      & npart(1)*npart(2)*npart(3)*nvars,& ! total data number
-     & MPI_DOUBLE_PRECISION,&  
-     &      stat,&
+     & MPI_DOUBLE_PRECISION,&
+     & mpi_status_ignore, &
      &      ierr)
       call MPI_FILE_CLOSE(unitd3d,ierr)
       
