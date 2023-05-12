@@ -7,7 +7,7 @@
       real(8),parameter:: timemax=5.0d0
       real(8),parameter:: dtout=5.0d0/600
 
-      integer,parameter::ngrid=256
+      integer,parameter::ngrid=64
       integer,parameter::mgn=2
       integer,parameter::in=ngrid+2*mgn+1 &
      &                  ,jn=ngrid+2*mgn+1 &
@@ -97,12 +97,12 @@ program main
   data is_final /.false./
 
   call InitializeMPI
-  print *, "setup grids and fields"
+  if(myid_w == 0) print *, "setup grids and fields"
   if(myid_w == 0) print *, "grid size for x y z",ngrid*ntiles(1),ngrid*ntiles(2),ngrid*ntiles(3)
   call GenerateGrid
   call GenerateProblem
   call ConsvVariable
-  print *, "entering main loop"
+  if(myid_w == 0) print *, "entering main loop"
 ! main loop
   if(myid_w == 0 .and. .not. nooutput )                        print *,"step","time","dt"
   time_begin = omp_get_wtime()
@@ -125,8 +125,8 @@ program main
 
   time_end = omp_get_wtime()
       
-  print *, "sim time [s]:", time_end-time_begin
-  print *, "time/count/cell", (time_end-time_begin)/(ngrid**3)/nhymax
+  if(myid_w == 0) print *, "sim time [s]:", time_end-time_begin
+  if(myid_w == 0) print *, "time/count/cell", (time_end-time_begin)/(ngrid**3)/nhymax
   
   is_final = .true.
   call Output(.true.)
@@ -192,37 +192,36 @@ subroutine GenerateGrid
   return
 end subroutine GenerateGrid
 
-      subroutine GenerateProblem
-      use basicmod
-      use eosmod
-      implicit none
-      integer::i,j,k
+subroutine GenerateProblem
+  use basicmod
+  use eosmod
+  use mpimod
+  implicit none
+  integer::i,j,k
 
-      real(8)::pi
+  real(8),parameter::pi=acos(-1.0d0)
 
-      real(8)::Ahl,Bhl,Chl
-      real(8),parameter::k_ini=2.0d0
-      
-      real(8),parameter:: ekin = 2.0d0
-      real(8),parameter:: emag = 2.0d0
-      real(8),parameter:: eint = 1.0d0
-      real(8),parameter:: d0 = 1.0d0
-      real(8),parameter:: v0 = sqrt(ekin*2.d0/d0)
-      real(8),parameter:: b0 = sqrt(emag*2.0)
-      real(8)          :: p0
-      real(8),parameter:: eps = 1.0d-1
-      real(8),parameter:: deltax = 0.1d0,deltay = 0.2d0,deltaz = 0.3d0 ! randam phase
+  real(8)::Ahl,Bhl,Chl
+  real(8),parameter::k_ini=2.0d0
+  
+  real(8),parameter:: ekin = 2.0d0
+  real(8),parameter:: emag = 2.0d0
+  real(8),parameter:: eint = 1.0d0
+  real(8),parameter:: d0 = 1.0d0
+  real(8),parameter:: v0 = sqrt(ekin*2.d0/d0)
+  real(8),parameter:: b0 = sqrt(emag*2.0)
+  real(8)          :: p0
+  real(8),parameter:: eps = 1.0d-1
+  real(8),parameter:: deltax = 0.1d0,deltay = 0.2d0,deltaz = 0.3d0 ! randam phase
 
-      integer::seedsize
-      integer,allocatable:: seed(:)
-      real(8)::x
+  integer::seedsize
+  integer,allocatable:: seed(:)
+  real(8)::x
 
-      call random_seed(size=seedsize)
-      print *,"seed size",seedsize
-      allocate(seed(seedsize))  
-      call random_seed(get=seed)
-
-      pi=acos(-1.0d0)
+  call random_seed(size=seedsize)
+!  print *,"seed size",seedsize
+  allocate(seed(seedsize))  
+  call random_seed(get=seed)
 
       Ahl = 0.5d0
       Bhl = 0.5d0
@@ -279,15 +278,15 @@ end subroutine GenerateGrid
       enddo
       enddo
       
-      print *,"initial profile is set"
+      if(myid_w ==0 )print *,"initial profile is set"
       call BoundaryCondition
 
 !$acc update device (d,v1,v2,v3)
 !$acc update device (p,ei,cs)
 !$acc update device (b1,b2,b3,bp)
       
-      return
-      end subroutine GenerateProblem
+  return
+end subroutine GenerateProblem
 
 subroutine BoundaryCondition
   use basicmod
@@ -745,12 +744,10 @@ subroutine TimestepControl
   enddo
   enddo
 !$acc end kernels
+!$acc update device (dtmin)
   call MPIminfind(dtmin,theid)
-!$acc kernels
   dt = 0.05d0 * dtmin
-!$acc end kernels
-
-!$acc update host (dt)
+!$acc update device (dt)
 
   return
 end subroutine TimestepControl

@@ -1,6 +1,9 @@
 #! /bin/bash
-#SBATCH --partition=ga80-1gpu
-#SBATCH --gres=gpu:1
+#SBATCH --partition=dgx-full
+#SBATCH --nodes=1
+#SBATCH --gpu-bind=closest
+#SBATCH --ntasks=4
+#SBATCH --gres=gpu:4
 #SBATCH -o ./out%j.log
 #SBATCH -e ./err%j.log
 
@@ -10,4 +13,4 @@
 # squeue
 
 module load nvhpc
-./Simulation.x
+mpiexec -n 4 ./Simulation.x

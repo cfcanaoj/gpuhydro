@@ -13,10 +13,11 @@ module mpimod
   logical :: reorder
   integer :: n1m, n1p, n2m, n2p, n3m, n3p
   integer :: nreq, nsub
-
+  integer ::   gpuid, ngpus
 !$acc declare create(myid_w)
 contains
 subroutine InitializeMPI
+  use openacc
   implicit none
   integer::key,color
   integer::np_hyd
@@ -26,7 +27,7 @@ subroutine InitializeMPI
   call MPI_COMM_SIZE( MPI_COMM_WORLD, nprocs_w, ierr )
   call MPI_COMM_RANK( MPI_COMM_WORLD, myid_w  , ierr )
   
-  ntiles(1)=2
+  ntiles(1)=1
   ntiles(2)=2
   ntiles(3)=2
   periodic(1)=.true.
@@ -62,7 +63,18 @@ subroutine InitializeMPI
   call MPI_CART_SHIFT( comm3d, 2, 1, n3m, n3p, ierr )
   !
   call MPI_CART_COORDS( comm3d, myid, 3, coords, ierr )
-      
+
+  ngpus = acc_get_num_devices(acc_device_nvidia)
+  if(myid_w == 0) then
+     print *, "num of GPUs = ", ngpus
+  end if
+
+  gpuid = mod(myid_w, ngpus)
+  if(ngpus == 0) gpuid = -1
+  if(gpuid >= 0) then
+     call acc_set_device_num(gpuid, acc_device_nvidia)
+  end if
+  
   return
 end subroutine InitializeMPI
 
@@ -78,17 +90,17 @@ subroutine MPIminfind(x,id)
   real(8):: bufinp(2), bufout(2)
 !$acc declare create(bufinp,bufout)
   
-!$acc host_data use_device(x,id,bufinp,bufout)
+!!!$acc host_data use_device(x,id,bufinp,bufout)
       bufinp(1) = x
       bufinp(2) = dble(myid_w)
 
        call MPI_ALLREDUCE( bufinp(1), bufout(1), 1 &
-     &                   , MPI_2DOUBLE_PRECISION     &
+     &                   , MPI_2DOUBLE_PRECISION   &
      &                   , MPI_MINLOC, comm3d, ierr)
        
        x = bufout(1)
        id =  int(bufout(2))
-!$acc end host_data
+!!!!$acc end host_data
 end subroutine MPIminfind
 
 subroutine MPImaxfind(x,id)
@@ -98,7 +110,7 @@ subroutine MPImaxfind(x,id)
   real(8):: bufinp(2), bufout(2)
 !$acc declare create(bufinp,bufout)
   
-!$acc host_data use_device(x,id,bufinp,bufout)
+!!!!$acc host_data use_device(x,id,bufinp,bufout)
       bufinp(1) = x
       bufinp(2) = dble(myid_w)
 
@@ -108,7 +120,7 @@ subroutine MPImaxfind(x,id)
        
        x = bufout(1)
        id =  int(bufout(2))
-!$acc end host_data
+!!!!$acc end host_data
 end subroutine MPImaxfind
 
 end module mpimod
