@@ -2,22 +2,25 @@
       implicit none
       integer::nhy
       integer,parameter::nhymax=3000
+      integer,parameter::nhydis=nhymax/100
       real(8)::time,dt
       data time / 0.0d0 /
       real(8),parameter:: timemax=5.0d0
       real(8),parameter:: dtout=5.0d0/600
 
-      integer,parameter::ngrid=64
+      integer,parameter::ngrid1=256
+      integer,parameter::ngrid2=128
+      integer,parameter::ngrid3=128
       integer,parameter::mgn=2
-      integer,parameter::in=ngrid+2*mgn+1 &
-     &                  ,jn=ngrid+2*mgn+1 &
-     &                  ,kn=ngrid+2*mgn+1
+      integer,parameter::in=ngrid1+2*mgn+1 &
+     &                  ,jn=ngrid2+2*mgn+1 &
+     &                  ,kn=ngrid3+2*mgn+1
       integer,parameter::is=mgn+1 &
      &                  ,js=mgn+1 &
      &                  ,ks=mgn+1
-      integer,parameter::ie=ngrid+mgn &
-     &                  ,je=ngrid+mgn &
-     &                  ,ke=ngrid+mgn
+      integer,parameter::ie=ngrid1+mgn &
+     &                  ,je=ngrid2+mgn &
+     &                  ,ke=ngrid3+mgn
 
       real(8),parameter:: x1min=-0.5d0,x1max=0.5d0
       real(8),parameter:: x2min=-0.5d0,x2max=0.5d0
@@ -32,7 +35,8 @@
 
       integer,parameter:: nbc=9
       
-!$acc declare create(ngrid,mgn)
+!$acc declare create(ngrid1,ngrid2,ngrid3)
+!$acc declare create(mgn)
 !$acc declare create(in,jn,kn)
 !$acc declare create(is,js,ks)
 !$acc declare create(ie,je,ke)
@@ -95,10 +99,9 @@ program main
   logical::is_final
   logical,parameter::nooutput=.true.
   data is_final /.false./
-
   call InitializeMPI
   if(myid_w == 0) print *, "setup grids and fields"
-  if(myid_w == 0) print *, "grid size for x y z",ngrid*ntiles(1),ngrid*ntiles(2),ngrid*ntiles(3)
+  if(myid_w == 0) print *, "grid size for x y z",ngrid1*ntiles(1),ngrid2*ntiles(2),ngrid3*ntiles(3)
   call GenerateGrid
   call GenerateProblem
   call ConsvVariable
@@ -108,7 +111,7 @@ program main
   time_begin = omp_get_wtime()
   mloop: do nhy=1,nhymax
      call TimestepControl
-     if(mod(nhy,300) .eq. 0  .and. .not. nooutput ) print *,nhy,time,dt
+     if(mod(nhy,nhydis) .eq. 0  .and. .not. nooutput ) print *,nhy,time,dt
      call BoundaryCondition
      call StateVevtor
      call EvaulateCh
@@ -126,7 +129,7 @@ program main
   time_end = omp_get_wtime()
       
   if(myid_w == 0) print *, "sim time [s]:", time_end-time_begin
-  if(myid_w == 0) print *, "time/count/cell", (time_end-time_begin)/(ngrid**3)/nhymax
+  if(myid_w == 0) print *, "time/count/cell", (time_end-time_begin)/(ngrid1*ngrid2*ngrid3)/nhymax
   
   is_final = .true.
   call Output(.true.)
@@ -152,7 +155,7 @@ subroutine GenerateGrid
   x1minloc = x1min + (x1max-x1min)/ntiles(1)* coords(1)
   x1maxloc = x1min + (x1max-x1min)/ntiles(1)*(coords(1)+1)
   
-  dx=(x1maxloc-x1minloc)/dble(ngrid)
+  dx=(x1maxloc-x1minloc)/dble(ngrid1)
   do i=1,in
      x1a(i) = dx*(i-(mgn+1))+x1minloc
   enddo
@@ -164,7 +167,7 @@ subroutine GenerateGrid
   x2minloc = x2min + (x2max-x2min)/ntiles(2)* coords(2)
   x2maxloc = x2min + (x2max-x2min)/ntiles(2)*(coords(2)+1)
  
-  dy=(x2maxloc-x2minloc)/dble(ngrid)
+  dy=(x2maxloc-x2minloc)/dble(ngrid2)
   do j=1,jn
      x2a(j) = dy*(j-(mgn+1))+x2minloc
   enddo
@@ -177,7 +180,7 @@ subroutine GenerateGrid
   x3minloc = x3min + (x3max-x3min)/ntiles(3)* coords(3)
   x3maxloc = x3min + (x3max-x3min)/ntiles(3)*(coords(3)+1)
  
-  dz=(x3maxloc-x3minloc)/ngrid
+  dz=(x3maxloc-x3minloc)/ngrid3
   do k=1,kn
      x3a(k) = dz*(k-(mgn+1))+x3minloc
   enddo
@@ -720,11 +723,13 @@ subroutine TimestepControl
   real(8)::dtl3
   real(8)::dtlocal
   real(8)::dtmin
+  integer::theid
   real(8)::ctot
   integer::i,j,k
-  integer::theid
+  real(8):: bufinp(2),bufout(2)
+!$acc declare create(bufinp,bufout)
 !$acc declare create(dtmin,theid)
-!$acc kernels    
+!$acc kernels
   dtmin=1.0d90
 !$acc loop collapse(3) reduction(min:dtmin)  
   do k=ks,ke
@@ -743,12 +748,16 @@ subroutine TimestepControl
   enddo
   enddo
   enddo
+  bufinp(1) = dtmin
+  bufinp(2) = dble(myid_w)
 !$acc end kernels
-!$acc update device (dtmin)
-  call MPIminfind(dtmin,theid)
+  call MPIminfind(bufinp,bufout)
+!$acc kernels
+  dtmin =     bufout(1)
+  theid = int(bufout(2))
   dt = 0.05d0 * dtmin
-!$acc update device (dt)
-
+!$acc end kernels
+!$acc update host (dt)
   return
 end subroutine TimestepControl
 
@@ -2110,7 +2119,10 @@ subroutine EvaulateCh
   real(8):: cts,css,cms
   real(8),parameter:: huge=1.0d90
   integer::theid
-!$acc declare create(chd,theid)
+  real(8):: bufinp(2),bufout(2)
+!$acc declare create(bufinp,bufout)
+!$acc declare create(chd)
+!$acc declare create(theid)
 !$acc kernels
   chd = 0.0d0
   ch1l = 0.0d0; ch2l = 0.0d0; ch3l = 0.0d0
@@ -2145,9 +2157,13 @@ subroutine EvaulateCh
   enddo
   enddo
   enddo
+  bufinp(1) = chd
+  bufinp(2) = dble(myid_w)
 !$acc end kernels
-  call MPImaxfind(chd,theid)
+  call MPImaxfind(bufinp,bufout)
 !$acc kernels
+  chd = bufout(1)
+  theid = int(bufout(2)) 
   chg      =      chd
 !$acc end kernels
 
@@ -2185,91 +2201,110 @@ end subroutine  EvaulateCh
 !$acc end kernels
 
       return
-      end subroutine  DampPsi
+end subroutine  DampPsi
 
-      subroutine Output
-      use basicmod
-      implicit none
-      integer::i,j,k
-      character(20),parameter::dirname="bindata/"
-      character(40)::filename
-      real(8),save::tout
-      data tout / 0.0d0 /
-      integer::nout
-      data nout / 1 /
-      integer,parameter::unitout=17
-      integer,parameter::unitbin=13
-      integer,parameter:: gs=1
-      integer,parameter:: nvar=9
-      real(8)::x1out(is-gs:ie+gs,2)
-      real(8)::x2out(js-gs:je+gs,2)
-      real(8)::x3out(ks-gs:ke+gs,2)
-      real(8)::hydout(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs,nvar)
+subroutine Output(is_final)
+  use basicmod
+  use mpiiomod
+  use mpimod
+  implicit none
+  integer::i,j,k
+  integer::iee,jee,kee
+  character(20),parameter::dirname="bindata/"
+  character(40)::filename
+  real(8),save::tout
+  data tout / 0.0d0 /
+  integer::nout
+  data nout / 1 /
+  integer,parameter::unitout=17
+  integer,parameter::unitbin=13
+  integer,parameter:: gs=1
+  integer,parameter:: nvar=9
 
-      logical, save:: is_inited
-      data is_inited /.false./
+  logical, intent(in):: is_final
 
-      if (.not. is_inited) then
-         call makedirs("bindata")
-         is_inited =.true.
-      endif
+  logical, save:: is_inited
+  data is_inited /.false./
 
 
-      if(time .lt. tout+dtout) return
-!$acc update host (d,v1,v2,v3,p,b1,b2,b3,bp)
+  iee = ie
+  jee = je
+  kee = ke
+  
+  if(coords(1) .eq. ntiles(1)-1) iee = ie+1
+  if(coords(2) .eq. ntiles(2)-1) jee = je+1
+  if(coords(3) .eq. ntiles(3)-1) kee = ke+1
+  
+  if (.not. is_inited) then
+     npart(1) = ngrid1
+     npart(2) = ngrid2
+     npart(3) = ngrid3
+  
+     ntotal(1) = ngrid1*ntiles(1)
+     ntotal(2) = ngrid2*ntiles(2)
+     ntotal(3) = ngrid3*ntiles(3)
+     
+     nvarg = 2
+     nvars = 9
+     
+     allocate(gridX(nvarg,1:iee-is+1))
+     allocate(gridY(nvarg,1:jee-js+1))
+     allocate(gridZ(nvarg,1:kee-ks+1))
 
-      write(filename,'(a3,i5.5,a4)')"unf",nout,".dat"
-      filename = trim(dirname)//filename
+     allocate(data3D(nvars,ngrid1,ngrid2,ngrid3))
+     
+     call makedirs("bindata")
+     is_inited =.true.
+  endif
 
-      open(unitout,file=filename,status='replace',form='formatted')
-      write(unitout,*) "# ",time,dt
-      write(unitout,*) "# ",ngrid,gs
-      write(unitout,*) "# ",ngrid,gs
-      write(unitout,*) "# ",ngrid,gs
-      close(unitout)
+  if(time .lt. tout+dtout .and. .not. is_final) return
 
-      x1out(is-gs:ie+gs,1) = x1b(is-gs:ie+gs)
-      x1out(is-gs:ie+gs,2) = x1a(is-gs:ie+gs)
+  if(myid_w == 0)then
+  write(filename,'(a3,i5.5,a4)')"unf",nout,".dat"
+  filename = trim(dirname)//filename
 
-      x2out(is-gs:ie+gs,1) = x2b(is-gs:ie+gs)
-      x2out(is-gs:ie+gs,2) = x2a(is-gs:ie+gs)
+  open(unitout,file=filename,status='replace',form='formatted')
+  write(unitout,*) "# ",time,dt
+  write(unitout,*) "# ",ngrid1*ntiles(1)
+  write(unitout,*) "# ",ngrid2*ntiles(2)
+  write(unitout,*) "# ",ngrid3*ntiles(3)
+  close(unitout)
+  endif
 
-      x3out(ks-gs:ke+gs,1) = x3b(ks-gs:ke+gs)
-      x3out(ks-gs:ke+gs,2) = x3a(ks-gs:ke+gs)
+  gridX(1,1:iee-is+1) = x1b(is:iee)
+  gridX(2,1:iee-is+1) = x1a(is:iee)
+  
+  gridY(1,1:jee-js+1) = x2b(js:jee)
+  gridY(2,1:jee-js+1) = x2a(js:jee)
 
-      hydout(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs,1) =  d(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-      hydout(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs,2) = v1(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-      hydout(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs,3) = v2(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-      hydout(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs,4) = v3(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-      hydout(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs,5) = b1(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-      hydout(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs,6) = b2(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-      hydout(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs,7) = b3(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-      hydout(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs,8) = bp(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
-      hydout(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs,9) =  p(is-gs:ie+gs,js-gs:je+gs,ks-gs:ke+gs)
+  gridZ(1,1:kee-ks+1) = x3b(ks:kee)
+  gridZ(2,1:kee-ks+1) = x3a(ks:kee)
 
-      write(filename,'(a3,i5.5,a4)')"bin",nout,".dat"
-      filename = trim(dirname)//filename
-      open(unitbin,file=filename,status='replace',form='binary') 
-      write(unitbin) x1out(:,:)
-      write(unitbin) x2out(:,:)
-      write(unitbin) x3out(:,:)
-      write(unitbin) hydout(:,:,:,:)
-      close(unitbin)
+  data3D(1,1:npart(1),1:npart(2),1:npart(3)) =  d(is:ie,js:je,ks:ke)
+  data3D(2,1:npart(1),1:npart(2),1:npart(3)) = v1(is:ie,js:je,ks:ke)
+  data3D(3,1:npart(1),1:npart(2),1:npart(3)) = v2(is:ie,js:je,ks:ke)
+  data3D(4,1:npart(1),1:npart(2),1:npart(3)) = v3(is:ie,js:je,ks:ke)
+  data3D(5,1:npart(1),1:npart(2),1:npart(3)) = b1(is:ie,js:je,ks:ke)
+  data3D(6,1:npart(1),1:npart(2),1:npart(3)) = b2(is:ie,js:je,ks:ke)
+  data3D(7,1:npart(1),1:npart(2),1:npart(3)) = b3(is:ie,js:je,ks:ke)
+  data3D(8,1:npart(1),1:npart(2),1:npart(3)) = bp(is:ie,js:je,ks:ke)
+  data3D(9,1:npart(1),1:npart(2),1:npart(3)) =  p(is:ie,js:je,ks:ke)
 
-      print *, "output:",nout,time
+  if(myid_w==0)print *, "output:",nout,time
 
-      nout=nout+1
-      tout=time
-
-      return
-!         print *, "bpf2",nflux2(mbps,i,j,k)
-      end subroutine Output
-
-      subroutine makedirs(outdir)
-      implicit none
-      character(len=*), intent(in) :: outdir
-      character(len=256) command
-      write(command, *) 'if [ ! -d ', trim(outdir), ' ]; then mkdir -p ', trim(outdir), '; fi'
-      write(*, *) trim(command)
-      call system(command)
-      end subroutine makedirs
+  call MPIOutputBindary(nout)
+      
+  nout=nout+1
+  tout=time
+  return
+!         write(6,*) "bpf2",nflux2(mbps,i,j,k)
+end subroutine Output
+      
+subroutine makedirs(outdir)
+  implicit none
+  character(len=*), intent(in) :: outdir
+  character(len=256) command
+  write(command, *) 'if [ ! -d ', trim(outdir), ' ]; then mkdir -p ', trim(outdir), '; fi'
+!  write(*, *) trim(command)
+  call system(command)
+end subroutine makedirs

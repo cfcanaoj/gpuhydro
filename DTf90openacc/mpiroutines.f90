@@ -75,6 +75,7 @@ subroutine InitializeMPI
      call acc_set_device_num(gpuid, acc_device_nvidia)
   end if
   
+!$acc update device (myid_w)
   return
 end subroutine InitializeMPI
 
@@ -83,44 +84,28 @@ subroutine FinalizeMPI
   call MPI_FINALIZE(ierr)
 end subroutine FinalizeMPI
 
-subroutine MPIminfind(x,id)
+subroutine MPIminfind(bufinp, bufout)
   implicit none
-  real(8),intent(inout):: x
-  integer,intent(out):: id
-  real(8):: bufinp(2), bufout(2)
-!$acc declare create(bufinp,bufout)
-  
-!!!$acc host_data use_device(x,id,bufinp,bufout)
-      bufinp(1) = x
-      bufinp(2) = dble(myid_w)
+  real(8),intent(in) :: bufinp(2)
+  real(8),intent(out):: bufout(2)
 
+!$acc host_data use_device(bufinp,bufout)
        call MPI_ALLREDUCE( bufinp(1), bufout(1), 1 &
      &                   , MPI_2DOUBLE_PRECISION   &
-     &                   , MPI_MINLOC, comm3d, ierr)
-       
-       x = bufout(1)
-       id =  int(bufout(2))
-!!!!$acc end host_data
+     &                   , MPI_MINLOC, comm3d, ierr)      
+!$acc end host_data
+
 end subroutine MPIminfind
 
-subroutine MPImaxfind(x,id)
+subroutine MPImaxfind(bufinp, bufout)
   implicit none
-  real(8),intent(inout):: x
-  integer,intent(out):: id
-  real(8):: bufinp(2), bufout(2)
-!$acc declare create(bufinp,bufout)
-  
-!!!!$acc host_data use_device(x,id,bufinp,bufout)
-      bufinp(1) = x
-      bufinp(2) = dble(myid_w)
-
+  real(8),intent(in) :: bufinp(2)
+  real(8),intent(out):: bufout(2)
+!$acc host_data use_device(bufinp,bufout)
        call MPI_ALLREDUCE( bufinp(1), bufout(1), 1 &
-     &                   , MPI_2DOUBLE_PRECISION     &
+     &                   , MPI_2DOUBLE_PRECISION   &
      &                   , MPI_MAXLOC, comm3d, ierr)
-       
-       x = bufout(1)
-       id =  int(bufout(2))
-!!!!$acc end host_data
+!$acc end host_data
 end subroutine MPImaxfind
 
 end module mpimod
@@ -181,6 +166,7 @@ contains
     data idisp / 0 /
 
 
+!   print *, "p1"
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! 1D GRID PREPARE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
@@ -229,7 +215,7 @@ contains
       call MPI_FILE_CLOSE(unitg1d,ierr)
       
    endif init1D
-    
+!   print *, "p2"
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! 2D GRID PREPARE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
