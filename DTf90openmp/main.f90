@@ -1,68 +1,68 @@
-      module basicmod
-      implicit none
-      integer::nhy
-      integer,parameter::nhymax=200
-      integer,parameter::nhydis=nhymax/100
-      real(8)::time,dt
-      data time / 0.0d0 /
-      real(8),parameter:: timemax=5.0d0
-      real(8),parameter:: dtout=5.0d0/600
+module basicmod
+  implicit none
+  integer::nhy
+  integer,parameter::nhymax=200
+  integer,parameter::nhydis=nhymax/100
+  real(8)::time,dt
+  data time / 0.0d0 /
+  real(8),parameter:: timemax=5.0d0
+  real(8),parameter:: dtout=5.0d0/600
+  
+  integer,parameter::ngrid=128
+  integer,parameter::mgn=2
+  integer,parameter::in=ngrid+2*mgn+1 &
+ &                  ,jn=ngrid+2*mgn+1 &
+ &                  ,kn=ngrid+2*mgn+1
+  integer,parameter::is=mgn+1 &
+ &                  ,js=mgn+1 &
+ &                  ,ks=mgn+1
+  integer,parameter::ie=ngrid+mgn &
+ &                  ,je=ngrid+mgn &
+ &                  ,ke=ngrid+mgn
 
-      integer,parameter::ngrid=128
-      integer,parameter::mgn=2
-      integer,parameter::in=ngrid+2*mgn+1 &
-     &                  ,jn=ngrid+2*mgn+1 &
-     &                  ,kn=ngrid+2*mgn+1
-      integer,parameter::is=mgn+1 &
-     &                  ,js=mgn+1 &
-     &                  ,ks=mgn+1
-      integer,parameter::ie=ngrid+mgn &
-     &                  ,je=ngrid+mgn &
-     &                  ,ke=ngrid+mgn
-
-      real(8),parameter:: x1min=-0.5d0,x1max=0.5d0
-      real(8),parameter:: x2min=-0.5d0,x2max=0.5d0
-      real(8),parameter:: x3min=-0.5d0,x3max=0.5d0
-      real(8),dimension(in)::x1a,x1b
-      real(8),dimension(jn)::x2a,x2b
-      real(8),dimension(kn)::x3a,x3b
-
-      real(8),dimension(in,jn,kn)::d,et,mv1,mv2,mv3
-      real(8),dimension(in,jn,kn)::p,ei,v1,v2,v3,cs
-      real(8),dimension(in,jn,kn)::b1,b2,b3,bp
-
-      integer,parameter::nbc=9
-      end module basicmod
+  real(8),parameter:: x1min=-0.5d0,x1max=0.5d0
+  real(8),parameter:: x2min=-0.5d0,x2max=0.5d0
+  real(8),parameter:: x3min=-0.5d0,x3max=0.5d0
+  real(8),dimension(in)::x1a,x1b
+  real(8),dimension(jn)::x2a,x2b
+  real(8),dimension(kn)::x3a,x3b
+  
+  real(8),dimension(in,jn,kn)::d,et,mv1,mv2,mv3
+  real(8),dimension(in,jn,kn)::p,ei,v1,v2,v3,cs
+  real(8),dimension(in,jn,kn)::b1,b2,b3,bp
+  
+  integer,parameter::nbc=9
+end module basicmod
       
-      module eosmod
-      implicit none
+module eosmod
+  implicit none
 ! isothermal
-      real(8)::csiso  !! isothemal sound speed
-      end module eosmod
+  real(8)::csiso  !! isothemal sound speed
+end module eosmod
     
-      module fluxmod
-      use basicmod, only : in,jn,kn
-      implicit none
-      real(8):: chg
-      integer,parameter::nden=1,nve1=2,nve2=3,nve3=4,nene=5,npre=6,ncsp=7 &
-     &                         ,nbm1=8,nbm2=9,nbm3=10,nbps=11
-      integer,parameter::nhyd=11
-      real(8),dimension(nhyd,in,jn,kn):: svc
+module fluxmod
+  use basicmod, only : in,jn,kn
+  implicit none
+  real(8):: chg
+  integer,parameter::nden=1,nve1=2,nve2=3,nve3=4,nene=5,npre=6,ncsp=7 &
+ &                         ,nbm1=8,nbm2=9,nbm3=10,nbps=11
+  integer,parameter::nhyd=11
+  real(8),dimension(nhyd,in,jn,kn):: svc
 
-      integer,parameter::mudn= 1,muvu= 2,muvv= 3,muvw= 4,muet= 5 &
-     &                          ,mubu= 6,mubv= 7,mubw= 8,mubp= 9 &
-     &                  ,mfdn=10,mfvu=11,mfvv=12,mfvw=13,mfet=14 &
-     &                          ,mfbu=15,mfbv=16,mfbw=17,mfbp=18 &
-     &                          ,mcsp=19,mvel=20,mpre=21
-      integer,parameter:: mflx=9,madd=3
+  integer,parameter::mudn= 1,muvu= 2,muvv= 3,muvw= 4,muet= 5 &
+ &                          ,mubu= 6,mubv= 7,mubw= 8,mubp= 9 &
+ &                  ,mfdn=10,mfvu=11,mfvv=12,mfvw=13,mfet=14 &
+ &                          ,mfbu=15,mfbv=16,mfbw=17,mfbp=18 &
+ &                          ,mcsp=19,mvel=20,mpre=21
+  integer,parameter:: mflx=9,madd=3
 
-      integer,parameter:: mden=1,mrv1=2,mrv2=3,mrv3=4,meto=5   &
-     &                          ,mrvu=muvu,mrvv=muvv,mrvw=muvw &
-     &                          ,mbm1=6,mbm2=7,mbm3=8,mbps=9   &
-     &                          ,mbmu=mubu,mbmv=mubv,mbmw=mubw
-      real(8),dimension(mflx,in,jn,kn):: nflux1,nflux2,nflux3
+  integer,parameter:: mden=1,mrv1=2,mrv2=3,mrv3=4,meto=5   &
+ &                          ,mrvu=muvu,mrvv=muvv,mrvw=muvw &
+ &                          ,mbm1=6,mbm2=7,mbm3=8,mbps=9   &
+ &                          ,mbmu=mubu,mbmv=mubv,mbmw=mubw
+  real(8),dimension(mflx,in,jn,kn):: nflux1,nflux2,nflux3
 
-      end module fluxmod
+end module fluxmod
 
 program main
   use basicmod
@@ -83,8 +83,6 @@ program main
   call GenerateProblem
   call ConsvVariable
 
-  if(.not. nooutput ) call Output(.true.)
-  stop
   if(myid_w == 0) print *, "entering main loop"
   if(.not. nooutput .and. myid_w == 0) print *, " step time dt "
   ! main loop
@@ -2216,25 +2214,25 @@ subroutine Output(is_final)
      
      write(filename,'(a3,a2)')"g1d",modelid
      filename = trim(dirname)//filename
-     open(unitout,file=filename,status='replace',form='binary')
+     open(unitout,file=filename,status='replace',access='stream')
      write(unitout) gridX(:,:)
      close(unitout)
 
      write(filename,'(a3,a2)')"g2d",modelid
      filename = trim(dirname)//filename
-     open(unitout,file=filename,status='replace',form='binary')
+     open(unitout,file=filename,status='replace',access='stream')
      write(unitout) gridY(:,:)
      close(unitout)
 
      write(filename,'(a3,a2)')"g3d",modelid
      filename = trim(dirname)//filename
-     open(unitout,file=filename,status='replace',form='binary')
+     open(unitout,file=filename,status='replace',access='stream')
      write(unitout) gridZ(:,:)
      close(unitout)
 
      write(filename,"(a3,a2,a1,i5.5)")'d3d',modelid,'.',nout
      filename = trim(dirname)//filename
-     open(unitout,file=filename,status='replace',form='binary')
+     open(unitout,file=filename,status='replace',access='stream')
      write(unitout) data3D(:,:,:,:)
      close(unitout)
  

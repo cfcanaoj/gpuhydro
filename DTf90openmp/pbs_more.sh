@@ -5,7 +5,8 @@
 #PBS -m b
 
 
-module load intel/compiler intel/mpi
+#module load intel/compiler intel/mpi
+module load ompi4
 # Go to this job's working directory
 cd  $PBS_O_WORKDIR
 export OMP_NUM_THREADS=1

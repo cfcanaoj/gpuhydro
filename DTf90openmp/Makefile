@@ -23,10 +23,18 @@ all: ${exe}
 ##################################
 # you may need the following command before the compile
 # module load intel/compiler intel/mpi
-fc= mpiifort
-foptopenmp = -qopenmp
-fopt = -g -traceback -O2
+#fc= mpiifort
+#foptopenmp = -qopenmp
+#fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
+
+# you may need the following command before the compile
+# module load ompi4
+fc= mpif90 -mcmodel=medium
+foptopenmp = -fopenmp
+fopt = -g -fbacktrace -O2
+#fopt=-g -traceback -check all -fpe0
+
 
 # setup for CfCA more end
 ##################################
