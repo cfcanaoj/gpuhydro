@@ -2181,10 +2181,10 @@ subroutine Output(is_final)
   filename = trim(dirname)//filename
 
   open(unitout,file=filename,status='replace',form='formatted')
-  write(unitout,*) "# ",time,dt
-  write(unitout,*) "# ",ngrid
-  write(unitout,*) "# ",ngrid
-  write(unitout,*) "# ",ngrid
+  write(unitout,'(a2,2(1x,E15.6e3))') "# ",time,dt
+  write(unitout,'(a2,i5.5)') "# ",ngrid
+  write(unitout,'(a2,i5.5)') "# ",ngrid
+  write(unitout,'(a2,i5.5)') "# ",ngrid
   close(unitout)
   endif
 
