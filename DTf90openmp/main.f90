@@ -83,6 +83,8 @@ program main
   call GenerateProblem
   call ConsvVariable
 
+  if(.not. nooutput ) call Output(.true.)
+  stop
   if(myid_w == 0) print *, "entering main loop"
   if(.not. nooutput .and. myid_w == 0) print *, " step time dt "
   ! main loop
@@ -2209,8 +2211,36 @@ subroutine Output(is_final)
 
   if(myid_w==0)print *, "output:",nout,time
 
-  call MPIOutputBindary(nout)
-      
+
+  if(ntiles(1)*ntiles(2)*ntiles(3) == 1)then
+     
+     write(filename,'(a3,a2)')"g1d",modelid
+     filename = trim(dirname)//filename
+     open(unitout,file=filename,status='replace',form='binary')
+     write(unitout) gridX(:,:)
+     close(unitout)
+
+     write(filename,'(a3,a2)')"g2d",modelid
+     filename = trim(dirname)//filename
+     open(unitout,file=filename,status='replace',form='binary')
+     write(unitout) gridY(:,:)
+     close(unitout)
+
+     write(filename,'(a3,a2)')"g3d",modelid
+     filename = trim(dirname)//filename
+     open(unitout,file=filename,status='replace',form='binary')
+     write(unitout) gridZ(:,:)
+     close(unitout)
+
+     write(filename,"(a3,a2,a1,i5.5)")'d3d',modelid,'.',nout
+     filename = trim(dirname)//filename
+     open(unitout,file=filename,status='replace',form='binary')
+     write(unitout) data3D(:,:,:,:)
+     close(unitout)
+ 
+  else
+     call MPIOutputBindary(nout)
+  endif
   nout=nout+1
   tout=time
   return

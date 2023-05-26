@@ -119,7 +119,7 @@ module mpiiomod
   integer,dimension(3):: ntotal
   integer,dimension(3):: npart
   integer:: nvars,nvarg
-  character(len= 2),parameter :: id ="DT"
+  character(len= 2),parameter :: modelid ="DT"
   character(len=10),parameter :: datadir="bindata/"
     
   real(8),dimension(:,:),allocatable,save :: gridX, gridY, gridZ
@@ -127,6 +127,7 @@ module mpiiomod
   public ntotal,npart
   public nvars,nvarg
   
+  public modelid
   public gridX,gridY,gridZ,data3D
   public MPIOutputBindary
 contains  
@@ -186,7 +187,7 @@ contains
        
        call MPI_TYPE_COMMIT(SAG1D,ierr)
 
-      write(usrfile,"(a3,a2)")'g1d',id
+      write(usrfile,"(a3,a2)")'g1d',modelid
       fpathbin = trim(datadir)//usrfile
       call MPI_FILE_OPEN(MPI_COMM_WORLD, &
      &                         fpathbin, &  ! file path
@@ -233,7 +234,7 @@ contains
      & ierr)
       call MPI_TYPE_COMMIT(SAG2D,ierr)
          
-      write(usrfile,"(a3,a2)")'g2d',id
+      write(usrfile,"(a3,a2)")'g2d',modelid
       fpathbin = trim(datadir)//usrfile
  
       call MPI_FILE_OPEN(MPI_COMM_WORLD, &
@@ -275,7 +276,7 @@ contains
      & ierr)
          call MPI_TYPE_COMMIT(SAG3D,ierr)
 
-      write(usrfile,"(a3,a2)")'g3d',id
+      write(usrfile,"(a3,a2)")'g3d',modelid
       fpathbin = trim(datadir)//usrfile
       
       call MPI_FILE_OPEN(MPI_COMM_WORLD,&
@@ -331,7 +332,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! DATA WRITE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(usrfile,"(a3,a2,a1,i5.5)")'d3d',id,'.',timeid
+    write(usrfile,"(a3,a2,a1,i5.5)")'d3d',modelid,'.',timeid
     fpathbin = trim(datadir)//usrfile
     
       call MPI_FILE_OPEN(MPI_COMM_WORLD, &
