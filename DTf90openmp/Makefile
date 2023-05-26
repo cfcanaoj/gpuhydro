@@ -10,9 +10,9 @@ all: ${exe}
 ##################################
 # setup for CfCA XC50 begin
 ##################################
-fc= ftn
-foptopenmp = -qopenmp
-fopt = -g -traceback -O2
+#fc= ftn
+#foptopenmp = -qopenmp
+#fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
 # setup for CfCA XC50 end
@@ -21,9 +21,11 @@ fopt = -g -traceback -O2
 ##################################
 # setup for CfCA more begin
 ##################################
-#fc= mpiifort
-#foptopenmp = -qopenmp
-#fopt = -g -traceback -O2
+# you may need the following command before the compile
+# module load intel/compiler intel/mpi
+fc= mpiifort
+foptopenmp = -qopenmp
+fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
 # setup for CfCA more end
