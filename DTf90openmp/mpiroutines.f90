@@ -332,7 +332,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! DATA WRITE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(usrfile,"(a3,a2,a1,i5.5)")'d3d',modelid,'.',timeid
+    write(usrfile,"(a3,a2,i5.5)")'d3d',modelid,timeid
     fpathbin = trim(datadir)//usrfile
     
       call MPI_FILE_OPEN(MPI_COMM_WORLD, &

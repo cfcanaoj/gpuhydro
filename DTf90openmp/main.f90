@@ -2177,7 +2177,7 @@ subroutine Output(is_final)
   if(time .lt. tout+dtout .and. .not. is_final) return
 
   if(myid_w == 0)then
-  write(filename,'(a3,i5.5,a4)')"unf",nout,".dat"
+  write(filename,'(a3,a2,i5.5)')"unf",modelid,nout
   filename = trim(dirname)//filename
 
   open(unitout,file=filename,status='replace',form='formatted')
@@ -2230,7 +2230,7 @@ subroutine Output(is_final)
      write(unitout) gridZ(:,:)
      close(unitout)
 
-     write(filename,"(a3,a2,a1,i5.5)")'d3d',modelid,'.',nout
+     write(filename,"(a3,a2,i5.5)")'d3d',modelid,nout
      filename = trim(dirname)//filename
      open(unitout,file=filename,status='replace',access='stream')
      write(unitout) data3D(:,:,:,:)
