@@ -6,22 +6,22 @@ all: ${exe}
 .PHONY: all clean allclean
 
 ##################################
-# setup for CfCA XC50 begin
+# setup for CfCA XD2000 begin
 ##################################
-#fc= ftn
-#foptopenmp = -qopenmp
-#fopt = -g -traceback -O2
+fc= mpiifx
+foptopenmp = -fiopenmp
+fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
-# setup for CfCA XC50 end
+# setup for CfCA XD2000 end
 ##################################
 
 ##################################
 # setup for CfCA more begin
 ##################################
-fc= mpiifort
-foptopenmp = -qopenmp
-fopt = -g -traceback -O2
+#fc= mpiifort
+#foptopenmp = -qopenmp
+#fopt = -g -traceback -O2
 #fopt=-g -traceback -check all -fpe0
 
 # setup for CfCA more end
