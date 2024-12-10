@@ -5,7 +5,7 @@ module basicmod
   integer,parameter::nhymax=20000
   real(8)::time,dt
   data time / 0.0d0 /
-  integer,parameter::ngrid=120
+  integer,parameter::ngrid=60
   integer,parameter::mgn=2
   integer,parameter::in=ngrid+2*mgn+1 &
  &                  ,jn=ngrid+2*mgn+1 &
@@ -46,7 +46,7 @@ module fluxmod
   integer,parameter:: mden=1,mrv1=2,mrv2=3,mrv3=4,meto=5  &
  &                          ,mrvu=muvu,mrvv=muvv,mrvw=muvw
   real(8),dimension(mflx,in,jn,kn):: nflux1,nflux2,nflux3
-      
+  private in,jn,kn
 end module fluxmod
 
 program main
