@@ -154,7 +154,12 @@ public:
     const index_t n3 = nx3;
     U_.resize(nvar, n3, n2, n1);
   }
-
+  inline       T& operator()(index_t n, index_t k, index_t j, index_t i)       noexcept {
+      return U_(n,k,j,i);
+  }
+  inline const T& operator()(index_t n, index_t k, index_t j, index_t i) const noexcept {
+      return U_(n,k,j,i);
+  }
   Array4D<T>&       data()       noexcept { return U_; }
   const Array4D<T>& data() const noexcept { return U_; }
 

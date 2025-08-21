@@ -1,3 +1,9 @@
+/**
+ * @file main.cpp
+ * @brief 
+ * @author Tomoya Takiwaki
+ * @date 2025-08-21
+*/
 #include <cmath>
 #include <cstdio>
 #include <algorithm>
@@ -5,157 +11,174 @@
 
 using namespace hydro_arrays_mod;
 
-// ======================= ユーザー設定 =========================
-namespace parameters_mod {
-  int nx{128}, ny{128}, nz{128};
-  int ngh{2};                 // Ghost Mesh
-  double Lx{1.0}, Ly{1.0}, Lz{1.0};
-  double ux{0.5}, uy{0.2}, uz{0.1};  // 一様移流速度
-  double cfl{0.4};
-  double t_end{1.0};
-  int output_every{50};       // 何ステップごとに統計出力
-  int is = ngh + nx-1;
-  int js = ngh + ny-1;
-  int ks = ngh + nz-1;
-  int ie = is + ngh;
-  int je = js + ngh;
-  int ke = ks + ngh;
+namespace resolution_mod {
+  int stepmax{100}; // max step 
+  int stepsnap = stepmax/100;
+  double time = 0.0e0;
+  double dt;
+  double timemax = 5.0e0;
+  double dtout = 5.0e0/600;
+  
+  int nx{64}; //! resolution for x
+  int ny{64}; //! resolution for y
+  int nz{64}; //! resolution for z
+  int ngh{2};  //! numeber of ghost mesh
+  int itot = nx + 2 * ngh; // 
+  int jtot = ny + 2 * ngh; // 
+  int ktot = nz + 2 * ngh; // 
+  int is = ngh; // 
+  int js = ngh; // 
+  int ks = ngh; // 
+  int ie = is + nx-1;
+  int je = js + ny-1;
+  int ke = ks + nz-1;
+  double xmin(-0.5),xmax(+0.5);
+  double ymin(-0.5),ymax(+0.5);
+  double zmin(-0.5),zmax(+0.5);
+  double dx = (xmax-xmin)/nx;
+  double dy = (ymax-ymin)/ny;
+  double dz = (zmax-zmin)/nz;
 };
-// =============================================================
 
-// 周期境界（全方向）: U(n=0,k,j,i) をコピー
-static void apply_periodic(HydroArrays<double>& U) {
-  using namespace parameters_mod;
-  auto& A = U.data();
-  const int n1 = nx;
-  const int n2 = ny;
-  const int n3 = nz;
+namespace hydflux_mod {
+#pragma omp declare target
+  int mconsv{5}; //!
+  HydroArrays<double> U; //! U(mconsv,ktot,jtot,itot)
+  int mden{0},mrvx{1},mrvy{2},mrvz{3},meto{4};
+  HydroArrays<double> fluxx,fluxy,fluxz;
+  int nprim{5}; //!
+  HydroArrays<double> P; //! P(nprim,ktot,jtot,itot)
+  int nden{0},nvex{1},nvey{2},nvez{3},nene{4};
+#pragma omp end declare target 
 
-  // x方向
-  for (int k=0; k<n3; ++k)
-    for (int j=0; j<n2; ++j) {
-      for (int g=0; g<ngh; ++g) {
-        A(0,k,j,            g           ) = A(0,k,j, n1 - 2*ngh + g); // 左ハロー
-        A(0,k,j, n1 - ngh + g)            = A(0,k,j,      ngh + g ); // 右ハロー
-      }
-    }
-  // y方向（ny==1 のスラブにも対応）
-  for (int k=0; k<n3; ++k) {
-    for (int i=0; i<n1; ++i) {
-      for (int g=0; g<ngh; ++g) {
-        int jL = g;
-        int jR = n2 - ngh + g;
-        int j1 = n2 - 2*ngh + g;
-        int j2 = ngh + g;
-        A(0,k, jL, i) = A(0,k, j1, i);
-        A(0,k, jR, i) = A(0,k, j2, i);
-      }
-    }
+};
+
+static void SetBoundaryCondition() {
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+
+  // x-direction
+  for (int n=0; n<nprim; n++)
+    for (int k=ks; k<=ke; k++)
+      for (int j=js; j<=je;j++)
+	for (int i=1; i<=ngh; i++) {   
+	  P(n,k,j,is-i) = P(n,k,j,ie+1-i);
+	  P(n,k,j,ie+i) = P(n,k,j,is-1+i);
+	  
   }
-  // z方向（nz==1 のスラブにも対応）
-  for (int j=0; j<n2; ++j) {
-    for (int i=0; i<n1; ++i) {
-      for (int g=0; g<ngh; ++g) {
-        int kL = g;
-        int kR = n3 - ngh + g;
-        int k1 = n3 - 2*ngh + g;
-        int k2 = ngh + g;
-        A(0, kL, j, i) = A(0, k1, j, i);
-        A(0, kR, j, i) = A(0, k2, j, i);
-      }
-    }
+  
+
+  // y-direction
+  for (int n=0; n<nprim; n++)
+    for (int k=ks; k<=ke; k++)
+      for (int j=1; j<=ngh;j++)
+	for (int i=is; i<=ie; i++) {
+	  P(n,k,js-j,i) = P(n,k,je+1-j,i);
+	  P(n,k,je+j,i) = P(n,k,js-1+j,i);
   }
+  
+  // z-direction
+  for (int n=0; n<nprim; n++)
+    for (int k=1; k<=ngh; k++)
+      for (int j=js; j<=je;j++)
+	for (int i=is; i<=ie; i++) {
+	  P(n,ks-k,j,i) = P(n,ke+1-k,j,i);
+	  P(n,ke+k,j,i) = P(n,ks-1+k,j,i);
+  }
+  
 }
 
-// 面心フラックスを一次風上で計算（F = u * q_upwind）
-static void compute_face_fluxes(
-    const HydroArrays<double>& U,
-    HydroArrays<double>& fluxx,
-    HydroArrays<double>& fluxy,
-    HydroArrays<double>& fluxz,
-    double ux, double uy, double uz)
-{
-  using namespace parameters_mod;
-  auto& A = U.data();
-  // x1 面：i+1/2 におけるフラックス
-  {
-    auto& Fx = fluxx.data(); // (k,j,i+1) のサイズ
-    printf("p4\n");
+
+static void GetNumericalFlux1(){
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+
 #pragma omp target teams distribute parallel for collapse(3)
-    for (int k=ks; k<=ke; ++k)
-      for (int j=js; j<=je; ++j)
-        for (int i=is; i<=ie+1; ++i) {
-          // 風上値
-          double qL = A(0,k,j,i-1); // 左セル
-          double qR = A(0,k,j,i  ); // 右セル
-          double q_up = (ux >= 0.0) ? qL : qR;
-          Fx(0,k,j,i) = ux * q_up;
-        }
-  }
-    printf("p5\n");
-  // x2 面：j+1/2
-  {
-    auto& Fy = fluxy.data();
-#pragma omp target teams distribute parallel for collapse(3)
-    for (int k=ks; k<=ke; ++k)
-      for (int j=js; j<=je+1; ++j)
-        for (int i=is; i<=ie; ++i) {
-          double qB = A(0,k,j-1,i); // 下（minus）
-          double qT = A(0,k,j  ,i); // 上（plus）
-          double q_up = (uy >= 0.0) ? qB : qT;
-          Fy(0,k,j,i) = uy * q_up;
-        }
-  }
-  // x3 面：k+1/2
-  {
-    auto& Fz = fluxz.data();
-#pragma omp target teams distribute parallel for collapse(3)
-    for (int k=ks; k<=ke+1; ++k)
-      for (int j=js; j<=je; ++j)
-        for (int i=is; i<=ie; ++i) {
-          double qB = A(0,k-1,j,i);
-          double qT = A(0,k  ,j,i);
-          double q_up = (uz >= 0.0) ? qB : qT;
-          Fz(0,k,j,i) = uz * q_up;
-        }
-  }
+  for (int k=ks; k<=ke; ++k)
+    for (int j=js; j<=je; ++j)
+      for (int i=is; i<=ie+1; ++i) {
+	double qL = P(nden,k,j,i-1);
+	double qR = P(nden,k,j,i  );
+	double ux = 0.5e0*(P(nvex,k,j,i-1)+P(nvex,k,j,i));
+	double q_up = (ux >= 0.0) ? qL : qR;
+	fluxx(mden,k,j,i) = ux * q_up;
+      }
 }
 
-// セル中心更新（FV：q^{n+1} = q^n - dt/dx * (F_{i+1/2}-F_{i-1/2}) ...）
-static void update_cell_center(
-    HydroArrays<double>& U,
-    const HydroArrays<double>& fluxx,
-    const HydroArrays<double>& fluxy,
-    const HydroArrays<double>& fluxz,
-    double dt, double dx, double dy, double dz)
-{
-  using namespace parameters_mod;
-  auto& A = U.data();
 
-  const auto& Fx = fluxx.data();
-  const auto& Fy = fluxy.data();
-  const auto& Fz = fluxz.data();
+static void GetNumericalFlux2(){
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+
+#pragma omp target teams distribute parallel for collapse(3)
+  for (int k=ks; k<=ke; ++k)
+    for (int j=js; j<=je+1; ++j)
+      for (int i=is; i<=ie; ++i) {
+	double qL = P(nden,k,j-1,i);
+	double qR = P(nden,k,j  ,i);
+	double uy = 0.5e0*(P(nvey,k,j-1,i)+P(nvey,k,j,i));
+	double q_up = (uy >= 0.0) ? qL : qR;
+	fluxy(mden,k,j,i) = uy * q_up;
+      }
+}
+
+static void GetNumericalFlux3(){
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+
+#pragma omp target teams distribute parallel for collapse(3)
+  for (int k=ks; k<=ke+1; ++k)
+    for (int j=js; j<=je; ++j)
+      for (int i=is; i<=ie; ++i) {
+	double qL = P(nden,k-1,j,i);
+	double qR = P(nden,k  ,j,i);
+	double uz = 0.5e0*(P(nvez,k-1,j,i)+P(nvez,k,j,i));
+	double q_up = (uz >= 0.0) ? qL : qR;
+	fluxz(mden,k,j,i) = uz * q_up;
+      }
+}
+
+static void UpdateConservU(){
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
 
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke; ++k)
     for (int j=js; j<=je; ++j)
       for (int i=is; i<=ie; ++i) {
-        double dqx = (Fx(0,k,j,i+1) - Fx(0,k,j,i)) / dx;
-        double dqy = (Fy(0,k,j+1,i) - Fy(0,k,j,i)) / dy;
-        double dqz = (Fz(0,k+1,j,i) - Fz(0,k,j,i)) / dz;
-        A(0,k,j,i) -= dt * (dqx + dqy + dqz);
+        double dqx = (fluxx(mden,k,j,i+1) - fluxx(mden,k,j,i)) / dx;
+        double dqy = (fluxy(mden,k,j+1,i) - fluxy(mden,k,j,i)) / dy;
+        double dqz = (fluxz(mden,k+1,j,i) - fluxz(mden,k,j,i)) / dz;
+        U(mden,k,j,i) -= dt * (dqx + dqy + dqz);
       }
 }
 
-// 初期条件：3D ガウス（周期領域にマッチ）
-static void init_gaussian(HydroArrays<double>& U) {
-  using namespace parameters_mod;
-  auto& A = U.data();
 
-  double cx = 0.5*Lx, cy = 0.5*Ly, cz = 0.5*Lz;
+static void UpdatePrimitvP(){
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+
+#pragma omp target teams distribute parallel for collapse(3)
+  for (int k=ks; k<=ke; ++k)
+    for (int j=js; j<=je; ++j)
+      for (int i=is; i<=ie; ++i) {
+         P(nden,k,j,i) = U(mden,k,j,i);
+	 //P(nvex,k,j,i) = U(mrvx,k,j,i)/U(mden,k,j,i);
+         //P(nvey,k,j,i) = U(mrvy,k,j,i)/U(mden,k,j,i);
+         //P(nvez,k,j,i) = U(mrvz,k,j,i)/U(mden,k,j,i);
+	 double ekin = 0.5e0*( U(mrvx,k,j,i)*U(mrvx,k,j,i)
+			      +U(mrvy,k,j,i)*U(mrvy,k,j,i)
+			      +U(mrvz,k,j,i)*U(mrvz,k,j,i))/U(mden,k,j,i);
+         P(nene,k,j,i) = U(meto,k,j,i)-ekin;
+      }
+}
+
+static void GenerateProblem() {
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+
+  double cx = 0.5*(xmax-xmin), cy = 0.5*(ymax-ymin), cz = 0.5*(zmax-zmin);
   double sig2 = 0.01; // 分散（適当に）
-
-  double dx = Lx / nx, dy = Ly / ny, dz = Lz / nz;
 
   for (int k=ks; k<=ke; ++k)
     for (int j=js; j<=je; ++j)
@@ -165,90 +188,110 @@ static void init_gaussian(HydroArrays<double>& U) {
     double z = (k - ks + 0.5) * dz;
     double dx_ = x - cx, dy_ = y - cy, dz_ = z - cz;
     double r2 = dx_*dx_ + dy_*dy_ + dz_*dz_;
-    A(0,k,j,i) = std::exp(-r2 / (2.0*sig2));
-      };
-}
-
-// 統計出力（L1/L2 最大など）
-static void print_stats(const HydroArrays<double>& U, const char* tag) {
-  using namespace parameters_mod;
-  const auto& A = U.data();
-
-  double sum = 0.0, sum2 = 0.0, vmax = 0.0;
-  std::size_t ncell = 0;
-
-for (int k=ks; k<=ke; ++k)
+    P(nden,k,j,i) = std::exp(-r2 / (2.0*sig2));
+  };
+  
+  for (int k=ks; k<=ke; ++k)
     for (int j=js; j<=je; ++j)
       for (int i=is; i<=ie; ++i) {
-    double v = A(0,k,j,i);
-    sum  += v;
-    sum2 += v*v;
-    vmax  = std::max(vmax, std::abs(v));
-    ++ncell;
+    P(nvex,k,j,i) = 1.0e0;
+    P(nvey,k,j,i) = 0.0e0;
+    P(nvez,k,j,i) = 0.0e0;
+    P(nene,k,j,i) = 0.0e0;    
   };
 
-  double mean = sum / (double)ncell;
-  double rms  = std::sqrt(sum2 / (double)ncell);
-  std::printf("[%s] mean=% .6e  rms=% .6e  max|q|=% .6e\n", tag, mean, rms, vmax);
+  
+  for (int k=ks; k<=ke; ++k)
+    for (int j=js; j<=je; ++j)
+      for (int i=is; i<=ie; ++i) {
+    U(mden,k,j,i) = P(nden,k,j,i);
+    U(mrvx,k,j,i) = P(nden,k,j,i)*P(nvex,k,j,i);
+    U(mrvx,k,j,i) = P(nden,k,j,i)*P(nvey,k,j,i);
+    U(mrvx,k,j,i) = P(nden,k,j,i)*P(nvez,k,j,i);
+    double ekin = 0.5*P(nden,k,j,i)*( P(nvex,k,j,i)*P(nvex,k,j,i)
+	        		     +P(nvey,k,j,i)*P(nvey,k,j,i)
+				     +P(nvez,k,j,i)*P(nvez,k,j,i));
+     U(meto,k,j,i) = P(nene,k,j,i)+ekin;
+  };
+#pragma omp target update to (U,P)
+  
 }
 
+static void ControlTimestep(){
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+  double dtmin;
+  const double eps = 1.0e-10;
+  dtmin = 1.0e10;
+  for (int k=ks; k<=ke; k++)
+    for (int j=js; j<=je; j++)
+      for (int i=is; i<=ie; i++) {
+	double dtminloc = std::min({dx/(P(nvex,k,j,i)+eps)
+			           ,dy/(P(nvey,k,j,i)+eps)
+				   ,dz/(P(nvez,k,j,i)+eps)});
+	dtmin = std::min(dtminloc,dtmin);
+      }
+  dt = 0.5*dtmin;
+}
+
+void Output1D(){
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+  static int index = 0;
+  FILE *ofile;
+  int i;
+  char outfile[20];
+  int          ret;
+
+  int j,k;
+  j=js;
+  k=ks;
+  ret=sprintf(outfile,"snap/t%05d.dat",index);
+  ofile = fopen(outfile,"w");
+  fprintf(ofile,  "# %12.7e\n",time);
+  fprintf(ofile,  "# %12s %12s %12s\n","x[cm]","rho[g/cm^3]","v_x[cm/s]");
+  for(i=is;i<=ie;i++){
+    fprintf(ofile,"  %12.5e %12.5e %12.5e \n",i*dx,P(nden,k,j,i),P(nvex,k,j,i));
+  }
+  fclose(ofile);
+  index += 1;
+}
+
+
+
+
+
 int main() {
-  using namespace parameters_mod;
-
-  // 格子幅
-  double dx = Lx / nx;
-  double dy = Ly / ny;
-  double dz = Lz / nz;
-
-  // 保存量（nvar=1）と面中心フラックスの確保
-  HydroArrays<double> U;
-  U.allocate(/*nvar*/1, nx+2*ngh+1,ny+2*ngh+1, nz+2*ngh+1);
-
-  HydroArrays<double> fluxx,fluxy,fluxz;
-  fluxx.allocate(/*nvar*/1, nx+2*ngh+1,ny+2*ngh+1, nz+2*ngh+1);
-  fluxy.allocate(/*nvar*/1, nx+2*ngh+1,ny+2*ngh+1, nz+2*ngh+1);
-  fluxz.allocate(/*nvar*/1, nx+2*ngh+1,ny+2*ngh+1, nz+2*ngh+1);
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+      U.allocate(mconsv,ktot,jtot,itot);
+  fluxx.allocate(mconsv,ktot,jtot,itot);
+  fluxy.allocate(mconsv,ktot,jtot,itot);
+  fluxz.allocate(mconsv,ktot,jtot,itot);
+  
+      P.allocate(nprim ,ktot,jtot,itot);
 
   // 初期条件
-  init_gaussian(U);
-  apply_periodic(U);
-  print_stats(U, "init");
+  GenerateProblem();
 
-#pragma omp target enter data map(to:U,fluxx,fluxy,fluxz)
-  // 目標時間までステップ
-  double t = 0.0;
   int step = 0;
-  const double umax =
-      std::max({std::abs(ux), std::abs(uy), std::abs(uz), 1e-14});
 
-  while (t < t_end) {
-    // CFL に基づく Δt
-    double dt_x = (std::abs(ux) > 0) ? cfl * dx / std::abs(ux) : 1e9;
-    double dt_y = (std::abs(uy) > 0) ? cfl * dy / std::abs(uy) : 1e9;
-    double dt_z = (std::abs(uz) > 0) ? cfl * dz / std::abs(uz) : 1e9;
-    double dt = std::min({dt_x, dt_y, dt_z, t_end - t});
-    if (dt <= 0) break;
+  for (step=0;step<stepmax;step++){
 
-    // 周期境界を更新 → 面心フラックス → セル更新
-    printf("p1\n");
-    apply_periodic(U);
-    printf("p2\n");
-    compute_face_fluxes(U, fluxx,fluxy,fluxz, ux, uy, uz);
-    printf("p3\n");
-    update_cell_center( U, fluxx,fluxy,fluxz, dt, dx, dy, dz);
+    ControlTimestep(); 
+    SetBoundaryCondition();
+    GetNumericalFlux1();
+    GetNumericalFlux2();
+    GetNumericalFlux3();
+    UpdateConservU();
+    UpdatePrimitvP();
 
-    t += dt;
-    ++step;
+    time += dt;
 
-    if (step % output_every == 0 || t >= t_end) {
-      char buf[64];
-      std::snprintf(buf, sizeof(buf), "t=%.4f step=%d", t, step);
-      print_stats(U, buf);
+    if (step % stepsnap == 0) {
+      Output1D();
     }
   }
 
-#pragma omp target exit data map(from:U,fluxx,fluxy,fluxz)
-  // 終了時の簡易チェック（値域）
-  print_stats(U, "final");
   return 0;
 }

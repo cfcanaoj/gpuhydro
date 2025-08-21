@@ -14,7 +14,7 @@ all: ${exed}/${exe}
 cc:= nvc++ 
 copt := -std=c++17  -O3
 coptgpu := -mp=gpu -Minfo=mp,accel -gpu=cc80,mem:managed
-coptdebug := -g
+coptdebug := -g -traceback
 
 #fopt = -g -traceback -O2
 #fopt = -g -traceback -check all -fpe0
