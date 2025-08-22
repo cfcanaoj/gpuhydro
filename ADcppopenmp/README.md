@@ -11,7 +11,7 @@ After you login the server, `g00.cfca.nao.ac.jp`, follow the instruction.
 ## How to run
 
 ### compile 
-To run the code, you need to compile 'Simulation.f90' in GPU server.
+To run the code, you need to compile the source codes in GPU server.
     
     make main.x
     
