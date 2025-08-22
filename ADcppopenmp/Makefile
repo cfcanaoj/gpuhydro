@@ -24,9 +24,11 @@ coptdebug := -g -traceback
 .cpp.o: 
 	${cc} ${copt} ${coptgpu} ${coptdebug} -c $< 
 
-OBJS = main.o
+OBJS = main.o hydro.o boundary.o
 
-main.o: main.cpp
+hydro.o: hydro.cpp
+boundary.o: boundary.cpp
+main.o: main.cpp hydro.o boundary.o
 
 ${exed}/${exe}: ${OBJS}
 	${cc} ${copt} ${coptgpu} ${coptdebug} ${OBJS} -o $@
