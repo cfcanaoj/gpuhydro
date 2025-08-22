@@ -7,6 +7,8 @@
 #include <cmath>
 #include <cstdio>
 #include <algorithm>
+#include <chrono>
+
 #include "hydro_arrays.hpp"
 #include "resolution.hpp"
 #include "hydro.hpp"
@@ -52,8 +54,8 @@ static void GenerateProblem() {
 				     +P(nvez,k,j,i)*P(nvez,k,j,i));
      U(meto,k,j,i) = P(nene,k,j,i)+ekin;
   };
-  #pragma omp target update to (U.data()[0:U.size()])
-  #pragma omp target update to (P.data()[0:P.size()])
+#pragma omp target update to (U.data()[0:U.size()])
+#pragma omp target update to (P.data()[0:P.size()])
 
 }
 
@@ -73,7 +75,7 @@ void Output1D(){
   k=ks;
   ret=sprintf(outfile,"snap/t%05d.dat",index);
   ofile = fopen(outfile,"w");
-  fprintf(ofile,  "# %12.7e\n",time);
+  fprintf(ofile,  "# %12.7e\n",time_sim);
   fprintf(ofile,  "# %12s %12s %12s\n","x[cm]","rho[g/cm^3]","v_x[cm/s]");
   for(i=is;i<=ie;i++){
     fprintf(ofile,"  %12.5e %12.5e %12.5e \n",i*dx,P(nden,k,j,i),P(nvex,k,j,i));
@@ -83,14 +85,18 @@ void Output1D(){
 }
 
 int main() {
+  
   using namespace resolution_mod;
-
+  
+  printf("setup grids and fields\n");
   AllocateVariables();
+  printf("grid size for x y z = %i %i %i\n",nx,ny,nz);
   // 初期条件
   GenerateProblem();
 
+  printf("entering main loop\n");
   int step = 0;
-
+  auto time_begin = std::chrono::high_resolution_clock::now();
   for (step=0;step<stepmax;step++){
 
     ControlTimestep(); 
@@ -101,12 +107,17 @@ int main() {
     UpdateConservU();
     UpdatePrimitvP();
 
-    time += dt;
+    time_sim += dt;
 
     if (step % stepsnap == 0) {
       Output1D();
     }
   }
 
+  auto time_end = std::chrono::high_resolution_clock::now();
+  printf("sim time [s]: %e\n", time_end-time_begin);
+  printf("time/count/cell : %e\n", (time_end-time_begin)/(nx*ny*nz)/stepmax);
+    
+  printf("program has been finished\n");
   return 0;
 }

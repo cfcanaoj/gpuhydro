@@ -30,12 +30,17 @@ namespace hydflux_mod {
 using namespace hydflux_mod;
 
 void AllocateVariables(){
-      U.allocate(mconsv,ktot,jtot,itot);
+  U.allocate(mconsv,ktot,jtot,itot);
+  P.allocate(nprim ,ktot,jtot,itot);
+      
   fluxx.allocate(mconsv,ktot,jtot,itot);
   fluxy.allocate(mconsv,ktot,jtot,itot);
   fluxz.allocate(mconsv,ktot,jtot,itot);
-  
-      P.allocate(nprim ,ktot,jtot,itot);
+
+#pragma omp target update to (fluxx.data()[0:fluxx.size()])
+#pragma omp target update to (fluxy.data()[0:fluxy.size()])
+#pragma omp target update to (fluxz.data()[0:fluxz.size()])
+
 }
 
 void GetNumericalFlux1(){

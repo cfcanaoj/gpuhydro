@@ -8,7 +8,7 @@
 namespace resolution_mod {
   inline constexpr int stepmax{100}; // max step 
   inline constexpr int stepsnap = stepmax/100;
-  inline double time = 0.0e0;
+  inline double time_sim = 0.0e0;
   inline double dt;
   inline constexpr double timemax = 5.0e0;
   inline constexpr double dtout = 5.0e0/600;
@@ -17,10 +17,10 @@ namespace resolution_mod {
   inline constexpr int ny{64}; //! resolution for y
   inline constexpr int nz{64}; //! resolution for z
   inline constexpr int ngh{2};  //! numeber of ghost mesh
-  inline constexpr int itot = nx + 2 * ngh; // 
-  inline constexpr int jtot = ny + 2 * ngh; // 
-  inline constexpr int ktot = nz + 2 * ngh; // 
-  inline constexpr int is = ngh; // 
+  inline constexpr int itot = nx + 2 * ngh+1; // 
+  inline constexpr int jtot = ny + 2 * ngh+1; // 
+  inline constexpr int ktot = nz + 2 * ngh+1; // 
+  inline constexpr int is = ngh; //! |0 1 | 2 for ngh =2
   inline constexpr int js = ngh; // 
   inline constexpr int ks = ngh; // 
   inline constexpr int ie = is + nx-1;
