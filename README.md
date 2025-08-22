@@ -1,10 +1,10 @@
 # gpuhydro
 To foster GPU computing, we show sample codes of hydrodynamic simulations in this repositry.
 
-|Problem|CPU/GPU|Name|
+|Problem|CPU/GPU|Language|directive|Name|
 ----|----|----
-|2D Kelvin-Helmholtz Instability|GPU|[KHf90openacc](KHf90openacc)|
-|2D Kelvin-Helmholtz Instability|CPU|[KHf90openmp](KHf90openmp)|
+|2D Kelvin-Helmholtz Instability|GPU|Fortran|OpenACC|[KHf90openacc](KHf90openacc)|
+|2D Kelvin-Helmholtz Instability|CPU|Fortran|OpenMP|[KHf90openmp](KHf90openmp)|
 
 ## Fortran witn OpenACC
 
