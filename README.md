@@ -2,7 +2,7 @@
 To foster GPU computing, we show sample codes of hydrodynamic simulations in this repositry.
 
 |Problem|CPU/GPU|Language|directive|Name|
-----|----|----
+----|----|----|----|----
 |2D Kelvin-Helmholtz Instability|GPU|Fortran|OpenACC|[KHf90openacc](KHf90openacc)|
 |2D Kelvin-Helmholtz Instability|CPU|Fortran|OpenMP|[KHf90openmp](KHf90openmp)|
 
