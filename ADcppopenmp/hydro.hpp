@@ -23,7 +23,7 @@ namespace hydflux_mod {
   extern int nden,nvex,nvey,nvez,nene;
 };
 
-void SetBoundaryCondition();
+void AllocateVariables();
 void GetNumericalFlux1();
 void GetNumericalFlux2();
 void GetNumericalFlux3();

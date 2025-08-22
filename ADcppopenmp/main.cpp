@@ -10,6 +10,7 @@
 #include "hydro_arrays.hpp"
 #include "resolution.hpp"
 #include "hydro.hpp"
+#include "boundary.hpp"
 
 static void GenerateProblem() {
   using namespace resolution_mod;
@@ -80,14 +81,8 @@ void Output1D(){
 
 int main() {
   using namespace resolution_mod;
-  using namespace hydflux_mod;
-      U.allocate(mconsv,ktot,jtot,itot);
-  fluxx.allocate(mconsv,ktot,jtot,itot);
-  fluxy.allocate(mconsv,ktot,jtot,itot);
-  fluxz.allocate(mconsv,ktot,jtot,itot);
-  
-      P.allocate(nprim ,ktot,jtot,itot);
 
+  AllocateVariables();
   // 初期条件
   GenerateProblem();
 

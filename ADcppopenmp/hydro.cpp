@@ -12,8 +12,10 @@
 #include "resolution.hpp"
 #include "hydro.hpp"
 
+using namespace hydro_arrays_mod;
+using namespace resolution_mod;
+
 namespace hydflux_mod {
-  using namespace hydro_arrays_mod;
 #pragma omp declare target
   int mconsv{5}; //!
   HydroArrays<double> U; //! U(mconsv,ktot,jtot,itot)
@@ -25,9 +27,18 @@ namespace hydflux_mod {
 #pragma omp end declare target 
 };
 
+using namespace hydflux_mod;
+
+void AllocateVariables(){
+      U.allocate(mconsv,ktot,jtot,itot);
+  fluxx.allocate(mconsv,ktot,jtot,itot);
+  fluxy.allocate(mconsv,ktot,jtot,itot);
+  fluxz.allocate(mconsv,ktot,jtot,itot);
+  
+      P.allocate(nprim ,ktot,jtot,itot);
+}
+
 void GetNumericalFlux1(){
-  using namespace resolution_mod;
-  using namespace hydflux_mod;
 
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke; ++k)
@@ -43,8 +54,6 @@ void GetNumericalFlux1(){
 
 
 void GetNumericalFlux2(){
-  using namespace resolution_mod;
-  using namespace hydflux_mod;
 
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke; ++k)
@@ -59,8 +68,6 @@ void GetNumericalFlux2(){
 }
 
 void GetNumericalFlux3(){
-  using namespace resolution_mod;
-  using namespace hydflux_mod;
 
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke+1; ++k)
@@ -75,8 +82,6 @@ void GetNumericalFlux3(){
 }
 
 void UpdateConservU(){
-  using namespace resolution_mod;
-  using namespace hydflux_mod;
 
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke; ++k)
@@ -91,8 +96,6 @@ void UpdateConservU(){
 
 
 void UpdatePrimitvP(){
-  using namespace resolution_mod;
-  using namespace hydflux_mod;
 
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke; ++k)
@@ -110,8 +113,6 @@ void UpdatePrimitvP(){
 }
 
 void ControlTimestep(){
-  using namespace resolution_mod;
-  using namespace hydflux_mod;
   double dtmin;
   const double eps = 1.0e-10;
   dtmin = 1.0e10;
