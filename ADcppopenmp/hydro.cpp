@@ -119,9 +119,9 @@ void ControlTimestep(){
   for (int k=ks; k<=ke; k++)
     for (int j=js; j<=je; j++)
       for (int i=is; i<=ie; i++) {
-	double dtminloc = std::min({dx/(P(nvex,k,j,i)+eps)
-			           ,dy/(P(nvey,k,j,i)+eps)
-				   ,dz/(P(nvez,k,j,i)+eps)});
+	double dtminloc = std::min({dx/(std::abs(P(nvex,k,j,i))+eps)
+				    ,dy/(std::abs(P(nvey,k,j,i))+eps)
+				   ,dz/(std::abs(P(nvez,k,j,i))+eps)});
 	dtmin = std::min(dtminloc,dtmin);
       }
   dt = 0.5*dtmin;

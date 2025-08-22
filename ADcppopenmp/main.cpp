@@ -45,15 +45,16 @@ static void GenerateProblem() {
       for (int i=is; i<=ie; ++i) {
     U(mden,k,j,i) = P(nden,k,j,i);
     U(mrvx,k,j,i) = P(nden,k,j,i)*P(nvex,k,j,i);
-    U(mrvx,k,j,i) = P(nden,k,j,i)*P(nvey,k,j,i);
-    U(mrvx,k,j,i) = P(nden,k,j,i)*P(nvez,k,j,i);
+    U(mrvy,k,j,i) = P(nden,k,j,i)*P(nvey,k,j,i);
+    U(mrvz,k,j,i) = P(nden,k,j,i)*P(nvez,k,j,i);
     double ekin = 0.5*P(nden,k,j,i)*( P(nvex,k,j,i)*P(nvex,k,j,i)
 	        		     +P(nvey,k,j,i)*P(nvey,k,j,i)
 				     +P(nvez,k,j,i)*P(nvez,k,j,i));
      U(meto,k,j,i) = P(nene,k,j,i)+ekin;
   };
-#pragma omp target update to (U,P)
-  
+  #pragma omp target update to (U.data()[0:U.size()])
+  #pragma omp target update to (P.data()[0:P.size()])
+
 }
 
 void Output1D(){
@@ -64,6 +65,8 @@ void Output1D(){
   int i;
   char outfile[20];
   int          ret;
+
+#pragma omp target update from (P.data()[0:P.size()])
 
   int j,k;
   j=js;

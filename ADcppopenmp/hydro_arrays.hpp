@@ -24,30 +24,6 @@ using index_t = int;     // 必要なら 32/64 を切り替え
 using size_t  = std::size_t;
 
 //----------------------------------------------
-// 基本：アクティブ領域/格子メタ
-//----------------------------------------------
-struct MeshSize {
-  index_t nx1{0}, nx2{0}, nx3{0}; // アクティブ(計算領域)の各次元
-  index_t nghost{1};              // ゴースト幅（全方向同一と仮定）
-};
-
-struct ActiveZone {
-  index_t is{0}, ie{-1};
-  index_t js{0}, je{-1};
-  index_t ks{0}, ke{-1};
-};
-
-// ヘルパ：MeshSize -> 確保サイズ & ActiveZone
-inline std::pair<ActiveZone, MeshSize> make_layout_with_ghosts(index_t nx1, index_t nx2, index_t nx3, index_t nghost) {
-  MeshSize ms{nx1, nx2, nx3, nghost};
-  ActiveZone az;
-  az.is =          nghost    ;     az.ie =          nghost + nx1 - 1     ;
-  az.js = (nx2>0)? nghost : 0;     az.je = (nx2>0)? nghost + nx2 - 1 : -1;
-  az.ks = (nx3>0)? nghost : 0;     az.ke = (nx3>0)? nghost + nx3 - 1 : -1;
-  return {az, ms};
-}
-
-//----------------------------------------------
 // 3D 配列: A(k,j,i) で i が連続（SoA のスカラー場）
 //----------------------------------------------
 template <typename T>
@@ -101,7 +77,6 @@ template <typename T>
 class Array4D {
 public:
   Array4D() = default;
-
   Array4D(index_t nv, index_t n3, index_t n2, index_t n1)
   { resize(nv, n3, n2, n1); }
 
@@ -148,7 +123,6 @@ template <typename T>
 class HydroArrays {
 public:
   void allocate(index_t nvar, index_t nx1, index_t nx2, index_t nx3) {
-    // ゴースト込み確保サイズ
     const index_t n1 = nx1;
     const index_t n2 = nx2;
     const index_t n3 = nx3;
@@ -162,21 +136,15 @@ public:
   }
   Array4D<T>&       data()       noexcept { return U_; }
   const Array4D<T>& data() const noexcept { return U_; }
-
+  index_t n1() const noexcept {return U_.n1();}
+  index_t n2() const noexcept {return U_.n2();}
+  index_t n3() const noexcept {return U_.n3();}
+  index_t nv() const noexcept {return U_.nv();}
+  index_t size() const noexcept {return U_.n1()*U_.n2()*U_.n3()*U_.nv();}
 private:
   Array4D<T> U_;
 };
 
-//----------------------------------------------
-// 軽量ユーティリティ
-//----------------------------------------------
-template <typename Fn>
-inline void for_each_cell(const ActiveZone& az, Fn&& fn) {
-  for (index_t k = az.ks; k <= az.ke; ++k)
-    for (index_t j = az.js; j <= az.je; ++j)
-      for (index_t i = az.is; i <= az.ie; ++i)
-        fn(k, j, i);
-}
 
 } // namespace hydromod
 
