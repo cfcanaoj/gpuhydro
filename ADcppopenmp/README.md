@@ -15,11 +15,11 @@ To run the code, you need to compile the source codes in GPU server.
     
     make main.x
     
-Then `Simulation.x`is made in this directory.
+Then `main.x`is made in this directory.
 
 ### run
 Let's run the code.
     
     sbatch sj_g00.sh
     
-The simulation data is saved in `bindata/`.
+The simulation data is saved in `snap/`.
