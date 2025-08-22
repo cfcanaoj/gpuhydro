@@ -6,7 +6,7 @@
 */
 
 namespace resolution_mod {
-  inline constexpr int stepmax{100}; // max step 
+  inline constexpr int stepmax{3000}; // max step 
   inline constexpr int stepsnap = stepmax/100;
   inline double time_sim = 0.0e0;
   inline double dt;

@@ -37,9 +37,9 @@ void AllocateVariables(){
   fluxy.allocate(mconsv,ktot,jtot,itot);
   fluxz.allocate(mconsv,ktot,jtot,itot);
 
-#pragma omp target update to (fluxx.data()[0:fluxx.size()])
-#pragma omp target update to (fluxy.data()[0:fluxy.size()])
-#pragma omp target update to (fluxz.data()[0:fluxz.size()])
+#pragma omp target update to (fluxx.data()[0:fluxx.size()],fluxx.n1,fluxx.n2,fluxx.n3,fluxx.nv)
+#pragma omp target update to (fluxy.data()[0:fluxy.size()],fluxy.n1,fluxy.n2,fluxy.n3,fluxy.nv)
+#pragma omp target update to (fluxz.data()[0:fluxz.size()],fluxz.n1,fluxz.n2,fluxz.n3,fluxz.nv)
 
 }
 

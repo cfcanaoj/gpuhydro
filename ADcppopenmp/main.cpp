@@ -54,8 +54,8 @@ static void GenerateProblem() {
 				     +P(nvez,k,j,i)*P(nvez,k,j,i));
      U(meto,k,j,i) = P(nene,k,j,i)+ekin;
   };
-#pragma omp target update to (U.data()[0:U.size()])
-#pragma omp target update to (P.data()[0:P.size()])
+#pragma omp target update to (U.data()[0:U.size()],U.n1,U.n2,U.n3,U.nv)
+#pragma omp target update to (P.data()[0:P.size()],P.n1,P.n2,P.n3,P.nv)
 
 }
 
@@ -115,8 +115,9 @@ int main() {
   }
 
   auto time_end = std::chrono::high_resolution_clock::now();
-  printf("sim time [s]: %e\n", time_end-time_begin);
-  printf("time/count/cell : %e\n", (time_end-time_begin)/(nx*ny*nz)/stepmax);
+  std::chrono::duration<double> elapsed = time_end - time_begin;
+  printf("sim time [s]: %e\n", elapsed.count());
+  printf("time/count/cell : %e\n", elapsed.count()/(nx*ny*nz)/stepmax);
     
   printf("program has been finished\n");
   return 0;
