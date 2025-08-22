@@ -13,6 +13,7 @@ After you login the server, `g00.cfca.nao.ac.jp`, follow the instruction.
 ### compile 
 To run the code, you need to compile the source codes in GPU server.
     
+    module load nvhpc/25.7
     make main.x
     
 Then `main.x`is made in this directory.
