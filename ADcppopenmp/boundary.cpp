@@ -29,7 +29,6 @@ void SetBoundaryCondition() {
 	  //dummy = P(n,k,j,ie+1-i);
 	  //dummy = 1.0;
   }
-  printf("p2\n");
   // y-direction
 #pragma omp target teams distribute parallel for collapse(4)
   for (int n=0; n<nprim; n++)

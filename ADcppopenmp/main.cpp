@@ -73,15 +73,15 @@ void Output1D(){
 
 #pragma omp target update from (P.data()[0:P.size()])
 
-  int j,k;
-  j=js;
-  k=ks;
+  int jc = int((js+je)/2);
+  int kc = int((ks+ke)/2);
   ret=sprintf(outfile,"snap/t%05d.dat",index);
+  (void)system("mkdir -p snap");
   ofile = fopen(outfile,"w");
   fprintf(ofile,  "# %12.7e\n",time_sim);
   fprintf(ofile,  "# %12s %12s %12s\n","x[cm]","rho[g/cm^3]","v_x[cm/s]");
   for(i=is;i<=ie;i++){
-    fprintf(ofile,"  %12.5e %12.5e %12.5e \n",i*dx,P(nden,k,j,i),P(nvex,k,j,i));
+    fprintf(ofile,"  %12.5e %12.5e %12.5e \n",i*dx,P(nden,kc,jc,i),P(nvex,kc,jc,i));
   }
   fclose(ofile);
   index += 1;
@@ -103,17 +103,17 @@ int main() {
   for (step=0;step<stepmax;step++){
 
     ControlTimestep(); 
-    //SetBoundaryCondition();
-    //GetNumericalFlux1();
-    //GetNumericalFlux2();
-    //GetNumericalFlux3();
+    SetBoundaryCondition();
+    GetNumericalFlux1();
+    GetNumericalFlux2();
+    GetNumericalFlux3();
     UpdateConservU();
-    //UpdatePrimitvP();
+    UpdatePrimitvP();
 
     time_sim += dt;
 
     if (step % stepsnap == 0) {
-      //Output1D();
+      Output1D();
     }
   }
 

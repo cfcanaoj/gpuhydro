@@ -10,11 +10,10 @@ all: ${exed}/${exe}
 #################
 # Fortran
 #################
-
-cc:= nvc++ 
+cc := nvc++ 
 copt := -std=c++17  -O3
-#coptgpu := -mp=gpu -Minfo=mp,accel -gpu=cc80,mem:managed
-coptgpu := -mp=gpu -Minfo=mp,accel -gpu=cc80,mem:separate
+coptgpu := -mp=gpu -Minfo=mp,accel -gpu=cc80,mem:managed
+#coptgpu := -mp=gpu -Minfo=mp,accel -gpu=cc80,mem:separate
 coptdebug := -g -traceback
 
 #fopt = -g -traceback -O2
