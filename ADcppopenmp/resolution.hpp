@@ -17,13 +17,13 @@ namespace resolution_mod {
   inline constexpr int ny{64}; //! resolution for y
   inline constexpr int nz{64}; //! resolution for z
   inline constexpr int ngh{2};  //! numeber of ghost mesh
-  inline constexpr int itot = nx + 2 * ngh+1; // 
+  inline constexpr int itot = nx + 2 * ngh+1; //! Like ZEUS-2D
   inline constexpr int jtot = ny + 2 * ngh+1; // 
   inline constexpr int ktot = nz + 2 * ngh+1; // 
   inline constexpr int is = ngh; //! |0 1 | 2 for ngh =2
   inline constexpr int js = ngh; // 
   inline constexpr int ks = ngh; // 
-  inline constexpr int ie = is + nx-1;
+  inline constexpr int ie = is + nx-1; //! 65 | 66 67 | for nx =64 
   inline constexpr int je = js + ny-1;
   inline constexpr int ke = ks + nz-1;
   inline constexpr double xmin(-0.5),xmax(+0.5);

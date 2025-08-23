@@ -37,6 +37,24 @@ void AllocateVariables(){
   fluxy.allocate(mconsv,ktot,jtot,itot);
   fluxz.allocate(mconsv,ktot,jtot,itot);
 
+  printf("alloc1\n");
+  for (int m=0; m<mconsv; m++)
+    for (int k=0; k<ktot; k++)
+      for (int j=0; j<jtot; j++)
+	for (int i=0; i<itot; i++) {
+	  U(m,k,j,i) = 0.0;
+	  fluxx(m,k,j,i) = 0.0;
+	  fluxy(m,k,j,i) = 0.0;
+	  fluxz(m,k,j,i) = 0.0;
+  }
+  printf("alloc2\n");
+  for (int n=0; n<nprim; n++)
+    for (int k=0; k<ktot; k++)
+      for (int j=0; j<jtot; j++)
+	for (int i=0; i<itot; i++) {
+	  P(n,k,j,i) = 0.0;
+  }
+  
 #pragma omp target update to (fluxx.data()[0:fluxx.size()],fluxx.n1,fluxx.n2,fluxx.n3,fluxx.nv)
 #pragma omp target update to (fluxy.data()[0:fluxy.size()],fluxy.n1,fluxy.n2,fluxy.n3,fluxy.nv)
 #pragma omp target update to (fluxz.data()[0:fluxz.size()],fluxz.n1,fluxz.n2,fluxz.n3,fluxz.nv)

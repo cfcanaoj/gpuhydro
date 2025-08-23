@@ -57,6 +57,9 @@ static void GenerateProblem() {
 #pragma omp target update to (U.data()[0:U.size()],U.n1,U.n2,U.n3,U.nv)
 #pragma omp target update to (P.data()[0:P.size()],P.n1,P.n2,P.n3,P.nv)
 
+  printf("test1 %i %i %i %i \n",U.n1,U.n2,U.n3,U.nv);
+#pragma omp target update from (U.n1,U.n2,U.n3,U.nv)
+  printf("test2 %i %i %i %i \n",U.n1,U.n2,U.n3,U.nv);
 }
 
 void Output1D(){
@@ -100,17 +103,17 @@ int main() {
   for (step=0;step<stepmax;step++){
 
     ControlTimestep(); 
-    SetBoundaryCondition();
-    GetNumericalFlux1();
-    GetNumericalFlux2();
-    GetNumericalFlux3();
+    //SetBoundaryCondition();
+    //GetNumericalFlux1();
+    //GetNumericalFlux2();
+    //GetNumericalFlux3();
     UpdateConservU();
-    UpdatePrimitvP();
+    //UpdatePrimitvP();
 
     time_sim += dt;
 
     if (step % stepsnap == 0) {
-      Output1D();
+      //Output1D();
     }
   }
 

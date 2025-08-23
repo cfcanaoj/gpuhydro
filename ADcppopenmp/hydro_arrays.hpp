@@ -29,10 +29,10 @@ using size_t  = std::size_t;
 template <typename T>
 class Array4D {
 public:
-  index_t   n1{0}, n2{0}, n3{0}, nv{0};
+  index_t n1{0}, n2{0}, n3{0}, nv{0};
   Array4D() = default;
   Array4D(index_t nv_, index_t n3_, index_t n2_, index_t n1_)
-  { resize(nv, n3, n2, n1); }
+  { resize(nv_, n3_, n2_, n1_); }
   
   void resize(index_t nv_,index_t n3_, index_t n2_, index_t n1_) {
     nv=nv_;n3 = n3_; n2 = n2_; n1 = n1_;
@@ -72,9 +72,10 @@ class HydroArrays {
 public:
   index_t nv{0}, n1{0}, n2{0}, n3{0};
   void allocate(index_t nvar, index_t nx1, index_t nx2, index_t nx3) {
-    const index_t n1 = nx1;
-    const index_t n2 = nx2;
-    const index_t n3 = nx3;
+    n1 = nx1;
+    n2 = nx2;
+    n3 = nx3;
+    nv = nvar;
     U_.resize(nvar, n3, n2, n1);
   }
   inline       T& operator()(index_t n, index_t k, index_t j, index_t i)       noexcept {

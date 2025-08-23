@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <algorithm>
 #include "hydro_arrays.hpp"
 #include "resolution.hpp"
@@ -15,19 +16,22 @@
 void SetBoundaryCondition() {
   using namespace resolution_mod;
   using namespace hydflux_mod;
-
+  double dummy;
+  
   // x-direction
+#pragma omp target teams distribute parallel for collapse(4)
   for (int n=0; n<nprim; n++)
     for (int k=ks; k<=ke; k++)
       for (int j=js; j<=je;j++)
-	for (int i=1; i<=ngh; i++) {   
+	for (int i=1; i<=ngh; i++) {
 	  P(n,k,j,is-i) = P(n,k,j,ie+1-i);
 	  P(n,k,j,ie+i) = P(n,k,j,is-1+i);
-	  
+	  //dummy = P(n,k,j,ie+1-i);
+	  //dummy = 1.0;
   }
-  
-
+  printf("p2\n");
   // y-direction
+#pragma omp target teams distribute parallel for collapse(4)
   for (int n=0; n<nprim; n++)
     for (int k=ks; k<=ke; k++)
       for (int j=1; j<=ngh;j++)
@@ -37,6 +41,7 @@ void SetBoundaryCondition() {
   }
   
   // z-direction
+#pragma omp target teams distribute parallel for collapse(4)
   for (int n=0; n<nprim; n++)
     for (int k=1; k<=ngh; k++)
       for (int j=js; j<=je;j++)
@@ -46,3 +51,4 @@ void SetBoundaryCondition() {
   }
   
 }
+
