@@ -31,13 +31,15 @@ class Array4D {
 public:
   std::vector<T> data;
   index_t n1{0}, n2{0}, n3{0}, nv{0};
+  size_t size{0};
   Array4D() = default;
   Array4D(index_t nv_, index_t n3_, index_t n2_, index_t n1_)
   { resize(nv_, n3_, n2_, n1_); }
   
   void allocate(index_t nv_,index_t n3_, index_t n2_, index_t n1_) {
     nv=nv_;n3 = n3_; n2 = n2_; n1 = n1_;
-    data.assign(static_cast<size_t>(nv)*n3*n2*n1, T{});
+    size = nv*n3*n2*n1;
+      data.assign(static_cast<size_t>(size), T{});
   }
   
   inline       T& operator()(index_t n, index_t k, index_t j, index_t i)       noexcept {
@@ -53,9 +55,6 @@ public:
     #endif
     return data[ (((static_cast<size_t>(n)*n3 + k)*n2) + j)*n1 + i ];
   }
-
-  // 次元
-  size_t  size() const noexcept { return n1*n2*n3*nv; }
 
   void fill(const T& v) { std::fill(data.begin(), data.end(), v); }
 

@@ -19,12 +19,12 @@
 
 using namespace hydro_arrays_mod;
 
-static void GenerateProblem(Array4D<double> P,Array4D<double> U) {
+static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
   using namespace resolution_mod;
   using namespace hydflux_mod;
 
   double cx = 0.5*(xmax+xmin), cy = 0.5*(ymax+ymin), cz = 0.5*(zmax+zmin);
-  double sig2 = 0.01; // 分散（適当に）
+  double sig2 = 0.01;
   for (int k=ks; k<=ke; ++k)
     for (int j=js; j<=je; ++j)
       for (int i=is; i<=ie; ++i) {
@@ -89,22 +89,22 @@ int main() {
   using namespace boundary_mod;
   
   printf("setup grids and fields\n");
+  
   AllocateHydroVariables(U,Fx,Fy,Fz,P);
  
-  AllocateBoundaryVariables(Xs,Xe,Ys,Ye,Zs,Ze);
+  //AllocateBoundaryVariables(Xs,Xe,Ys,Ye,Zs,Ze);
   
   printf("grid size for x y z = %i %i %i\n",nx,ny,nz);
-  // 初期条件
+  
   GenerateProblem(P,U);
-
   printf("entering main loop\n");
   int step = 0;
   auto time_begin = std::chrono::high_resolution_clock::now();
-#pragma omp target enter data map  (to: U.data[0:U.size()],P.data[0:P.size()]\
-                                    ,Fx.data[0:Fx.size()],Fy.data[0:Fy.size()],Fz.data[0:Fz.size()]\
-				    ,Xs.data[0:Xs.size()],Xe.data[0:Xe.size()]\
-				    ,Ys.data[0:Ys.size()],Ye.data[0:Ye.size()]\
-				    ,Zs.data[0:Zs.size()],Ze.data[0:Ze.size()] )
+#pragma omp target enter data map  (to: U.data[0: U.size], P.data[0: P.size]\
+                                      ,Fx.data[0:Fx.size],Fy.data[0:Fy.size],Fz.data[0:Fz.size]\
+  				      ,Xs.data[0:Xs.size],Xe.data[0:Xe.size]\
+				      ,Ys.data[0:Ys.size],Ye.data[0:Ye.size]\
+				      ,Zs.data[0:Zs.size],Ze.data[0:Ze.size])
 
   for (step=0;step<stepmax;step++){
 
@@ -119,16 +119,16 @@ int main() {
     time_sim += dt;
 
     if (step % stepsnap == 0) {
-#pragma omp target update from (P.data[0:P.size()])
+#pragma omp target update from (P.data[0:P.size])
       Output1D();
     }
   }
 
-#pragma omp target exit data map (delete: U.data[0:U.size()],P.data[0:P.size()]\
-                                    ,Fx.data[0:Fx.size()],Fy.data[0:Fy.size()],Fz.data[0:Fz.size()]\
-				    ,Xs.data[0:Xs.size()],Xe.data[0:Xe.size()]\
-				    ,Ys.data[0:Ys.size()],Ye.data[0:Ye.size()]\
-				    ,Zs.data[0:Zs.size()],Ze.data[0:Ze.size()] )
+#pragma omp target exit data map (delete: U.data[0: U.size], P.data[0: P.size]\
+                                        ,Fx.data[0:Fx.size],Fy.data[0:Fy.size],Fz.data[0:Fz.size]\
+				        ,Xs.data[0:Xs.size],Xe.data[0:Xe.size]\
+				        ,Ys.data[0:Ys.size],Ye.data[0:Ye.size]\
+				        ,Zs.data[0:Zs.size],Ze.data[0:Ze.size])
   auto time_end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed = time_end - time_begin;
   printf("sim time [s]: %e\n", elapsed.count());

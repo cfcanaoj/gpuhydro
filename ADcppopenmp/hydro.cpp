@@ -16,6 +16,7 @@ using namespace hydro_arrays_mod;
 using namespace resolution_mod;
 
 namespace hydflux_mod {
+#pragma omp declare target
   int mconsv{5}; //!
   Array4D<double> U; //! U(mconsv,ktot,jtot,itot)
   int mden{0},mrvx{1},mrvy{2},mrvz{3},meto{4};
@@ -23,6 +24,7 @@ namespace hydflux_mod {
   int nprim{5}; //!
   Array4D<double> P; //! P(nprim,ktot,jtot,itot)
   int nden{0},nvex{1},nvey{2},nvez{3},nene{4}; 
+#pragma omp end declare target
 };
 
 using namespace hydflux_mod;
@@ -51,12 +53,12 @@ void AllocateHydroVariables(Array4D<double>& U,Array4D<double>& Fx,Array4D<doubl
 	for (int i=0; i<itot; i++) {
 	  P(n,k,j,i) = 0.0;
   }
-#pragma omp target update to ( U.data[0: U.size()], U.n1, U.n2, U.n3, U.nv)
-#pragma omp target update to (Fx.data[0:Fx.size()],Fx.n1,Fx.n2,Fx.n3,Fx.nv)
-#pragma omp target update to (Fy.data[0:Fy.size()],Fy.n1,Fy.n2,Fy.n3,Fy.nv)
-#pragma omp target update to (Fz.data[0:Fz.size()],Fz.n1,Fz.n2,Fz.n3,Fz.nv)
+  //#pragma omp target update to ( U.data[0: U.size], U.n1, U.n2, U.n3, U.nv)
+  //#pragma omp target update to (Fx.data[0:Fx.size],Fx.n1,Fx.n2,Fx.n3,Fx.nv)
+  //#pragma omp target update to (Fy.data[0:Fy.size],Fy.n1,Fy.n2,Fy.n3,Fy.nv)
+  //#pragma omp target update to (Fz.data[0:Fz.size],Fz.n1,Fz.n2,Fz.n3,Fz.nv)
   
-#pragma omp target update to ( P.data[0: P.size()], P.n1, P.n2, P.n3, P.nv)
+  //#pragma omp target update to ( P.data[0: P.size], P.n1, P.n2, P.n3, P.nv)
 
 }
 
