@@ -23,8 +23,11 @@ namespace hydflux_mod {
   int nprim{5}; //!
   Array4D<double> P; //! P(nprim,ktot,jtot,itot)
   int nden{0},nvex{1},nvey{2},nvez{3},nene{4};
-#pragma acc declare create (U,P)
-#pragma acc declare create (Fx,Fy,Fz)
+#pragma acc declare create ( U)
+#pragma acc declare create ( P)
+#pragma acc declare create (Fx)
+#pragma acc declare create (Fy)
+#pragma acc declare create (Fz)
 
 };
 
@@ -38,7 +41,7 @@ void AllocateVariables(){
   Fy.allocate(mconsv,ktot,jtot,itot);
   Fz.allocate(mconsv,ktot,jtot,itot);
 
-  printf("alloc1\n");
+
   for (int m=0; m<mconsv; m++)
     for (int k=0; k<ktot; k++)
       for (int j=0; j<jtot; j++)
@@ -48,7 +51,7 @@ void AllocateVariables(){
 	  Fy(m,k,j,i) = 0.0;
 	  Fz(m,k,j,i) = 0.0;
   }
-  printf("alloc2\n");
+
   for (int n=0; n<nprim; n++)
     for (int k=0; k<ktot; k++)
       for (int j=0; j<jtot; j++)
@@ -56,11 +59,11 @@ void AllocateVariables(){
 	  P(n,k,j,i) = 0.0;
   }
   
-#pragma acc update device( U.data[0: U.size()], U.n1, U.n2, U.n3, U.nv)
-#pragma acc update device(Fx.data[0:Fx.size()],Fx.n1,Fx.n2,Fx.n3,Fx.nv)
-#pragma acc update device(Fy.data[0:Fy.size()],Fy.n1,Fy.n2,Fy.n3,Fy.nv)
-#pragma acc update device(Fz.data[0:Fz.size()],Fz.n1,Fz.n2,Fz.n3,Fz.nv)
-#pragma acc update device( P.data[0: P.size()], P.n1, P.n2, P.n3, P.nv)
+#pragma acc update device( U.data[0: U.size], U.n1, U.n2, U.n3, U.nv)
+#pragma acc update device(Fx.data[0:Fx.size],Fx.n1,Fx.n2,Fx.n3,Fx.nv)
+#pragma acc update device(Fy.data[0:Fy.size],Fy.n1,Fy.n2,Fy.n3,Fy.nv)
+#pragma acc update device(Fz.data[0:Fz.size],Fz.n1,Fz.n2,Fz.n3,Fz.nv)
+#pragma acc update device( P.data[0: P.size], P.n1, P.n2, P.n3, P.nv)
 }
 
 void GetNumericalFlux1(){

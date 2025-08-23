@@ -21,9 +21,12 @@ namespace boundary_mod{
   Array4D<double> Xs,Xe;
   Array4D<double> Ys,Ye;
   Array4D<double> Zs,Ze;
-#pragma acc declare create (Xs,Xe)
-#pragma acc declare create (Ys,Ye)
-#pragma acc declare create (Zs,Ze)
+#pragma acc declare create (Xs)
+#pragma acc declare create (Xe)
+#pragma acc declare create (Ys)
+#pragma acc declare create (Ye)
+#pragma acc declare create (Zs)
+#pragma acc declare create (Ze)
 
 }
 
@@ -42,15 +45,15 @@ void SetBoundaryCondition() {
     Zs.allocate(nprim ,ngh ,jtot,itot);
     Ze.allocate(nprim ,ngh ,jtot,itot);
     is_inited = true;
-#pragma acc update device(Xs.data[0:Xs.size()],Xs.n1,Xs.n2,Xs.n3,Xs.nv)
-#pragma acc update device(Xe.data[0:Xe.size()],Xe.n1,Xe.n2,Xe.n3,Xe.nv)
-#pragma acc update device(Ys.data[0:Ys.size()],Ys.n1,Ys.n2,Ys.n3,Ys.nv)
-#pragma acc update device(Ye.data[0:Ye.size()],Ye.n1,Ye.n2,Ye.n3,Ye.nv)
-#pragma acc update device(Zs.data[0:Zs.size()],Zs.n1,Zs.n2,Zs.n3,Zs.nv)
-#pragma acc update device(Ze.data[0:Ze.size()],Ze.n1,Ze.n2,Ze.n3,Ze.nv)
+#pragma acc update device(Xs.data[0:Xs.size],Xs.n1,Xs.n2,Xs.n3,Xs.nv)
+#pragma acc update device(Xe.data[0:Xe.size],Xe.n1,Xe.n2,Xe.n3,Xe.nv)
+#pragma acc update device(Ys.data[0:Ys.size],Ys.n1,Ys.n2,Ys.n3,Ys.nv)
+#pragma acc update device(Ye.data[0:Ye.size],Ye.n1,Ye.n2,Ye.n3,Ye.nv)
+#pragma acc update device(Zs.data[0:Zs.size],Zs.n1,Zs.n2,Zs.n3,Zs.nv)
+#pragma acc update device(Ze.data[0:Ze.size],Ze.n1,Ze.n2,Ze.n3,Ze.nv)
   }
   
-#pragma acc data present(P.data[0:P.size()])
+#pragma acc data present(P.data[0:P.size])
   {
   // x-direction
 #pragma acc loop independent collapse(4)

@@ -54,8 +54,8 @@ static void GenerateProblem() {
 				     +P(nvez,k,j,i)*P(nvez,k,j,i));
      U(meto,k,j,i) = P(nene,k,j,i)+ekin;
   };
-#pragma acc update device (U.data[0:U.size()])
-#pragma acc update device (P.data[0:P.size()])
+#pragma acc update device (U.data[0:U.size])
+#pragma acc update device (P.data[0:P.size])
 
 }
 
@@ -68,7 +68,7 @@ void Output1D(){
   char outfile[20];
   int          ret;
 
-#pragma acc update host (P.data[0:P.size()])
+#pragma acc update host (P.data[0:P.size])
   int jc = int((js+je)/2);
   int kc = int((ks+ke)/2);
   ret=sprintf(outfile,"snap/t%05d.dat",index);
@@ -91,7 +91,6 @@ int main() {
   printf("grid size for x y z = %i %i %i\n",nx,ny,nz);
   // 初期条件
   GenerateProblem();
-
   printf("entering main loop\n");
   int step = 0;
   auto time_begin = std::chrono::high_resolution_clock::now();
