@@ -1,7 +1,7 @@
 
 exed := ./
 
-exe=main.x
+exe := main.x
 
 all: ${exed}/${exe}
 
@@ -16,9 +16,6 @@ copt := -std=c++17  -O3
 #coptgpu := -acc -Minfo=accel -gpu=cc80,mem:managed
 coptgpu := -acc -Minfo=accel -gpu=cc80,mem:separate
 coptdebug := -g -traceback
-
-#fopt = -g -traceback -O2
-#fopt = -g -traceback -check all -fpe0
 
 .SUFFIXES: .cpp .o
 
