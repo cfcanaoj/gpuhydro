@@ -16,20 +16,18 @@ using namespace hydro_arrays_mod;
 using namespace resolution_mod;
 
 namespace hydflux_mod {
-#pragma omp declare target
   int mconsv{5}; //!
   Array4D<double> U; //! U(mconsv,ktot,jtot,itot)
   int mden{0},mrvx{1},mrvy{2},mrvz{3},meto{4};
   Array4D<double> Fx,Fy,Fz;
   int nprim{5}; //!
   Array4D<double> P; //! P(nprim,ktot,jtot,itot)
-  int nden{0},nvex{1},nvey{2},nvez{3},nene{4};
-#pragma omp end declare target 
+  int nden{0},nvex{1},nvey{2},nvez{3},nene{4}; 
 };
 
 using namespace hydflux_mod;
 
-void AllocateVariables(){
+void AllocateHydroVariables(Array4D<double>& U,Array4D<double>& Fx,Array4D<double>& Fy,Array4D<double>& Fz,Array4D<double>& P){
   U.allocate(mconsv,ktot,jtot,itot);
   P.allocate(nprim ,ktot,jtot,itot);
       
@@ -53,7 +51,6 @@ void AllocateVariables(){
 	for (int i=0; i<itot; i++) {
 	  P(n,k,j,i) = 0.0;
   }
-  
 #pragma omp target update to ( U.data[0: U.size()], U.n1, U.n2, U.n3, U.nv)
 #pragma omp target update to (Fx.data[0:Fx.size()],Fx.n1,Fx.n2,Fx.n3,Fx.nv)
 #pragma omp target update to (Fy.data[0:Fy.size()],Fy.n1,Fy.n2,Fy.n3,Fy.nv)
@@ -63,7 +60,7 @@ void AllocateVariables(){
 
 }
 
-void GetNumericalFlux1(){
+void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
 
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke; ++k)
@@ -78,7 +75,7 @@ void GetNumericalFlux1(){
 }
 
 
-void GetNumericalFlux2(){
+void GetNumericalFlux2(const Array4D<double>& P,Array4D<double>& Fy){
 
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke; ++k)
@@ -92,7 +89,7 @@ void GetNumericalFlux2(){
       }
 }
 
-void GetNumericalFlux3(){
+void GetNumericalFlux3(const Array4D<double>& P,Array4D<double>& Fz){
 
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke+1; ++k)
@@ -106,7 +103,7 @@ void GetNumericalFlux3(){
       }
 }
 
-void UpdateConservU(){
+void UpdateConservU(const Array4D<double>& Fx,const Array4D<double>& Fy,const Array4D<double>& Fz,Array4D<double>& U){
 
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke; ++k)
@@ -120,7 +117,7 @@ void UpdateConservU(){
 }
 
 
-void UpdatePrimitvP(){
+void UpdatePrimitvP(const Array4D<double>& U,Array4D<double>& P){
 
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke; ++k)

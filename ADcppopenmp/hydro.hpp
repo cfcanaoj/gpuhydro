@@ -12,8 +12,9 @@
 #include <algorithm>
 #include "hydro_arrays.hpp"
 
+using namespace hydro_arrays_mod;
+
 namespace hydflux_mod {
-  using namespace hydro_arrays_mod;
   extern int mconsv; //!
   extern Array4D<double> U; //! U(mconsv,ktot,jtot,itot)
   extern int mden,mrvx,mrvy,mrvz,meto;
@@ -23,12 +24,12 @@ namespace hydflux_mod {
   extern int nden,nvex,nvey,nvez,nene;
 };
 
-void AllocateVariables();
-void GetNumericalFlux1();
-void GetNumericalFlux2();
-void GetNumericalFlux3();
-void UpdateConservU();
-void UpdatePrimitvP();
+void AllocateHydroVariables(Array4D<double>& U, Array4D<double>& Fx,Array4D<double>& Fy,Array4D<double>& Fz,Array4D<double>& P);
+void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx);
+void GetNumericalFlux2(const Array4D<double>& P,Array4D<double>& Fy);
+void GetNumericalFlux3(const Array4D<double>& P,Array4D<double>& Fz);
+void UpdateConservU(const Array4D<double>& Fx,const Array4D<double>& Fy,const Array4D<double>& Fz,Array4D<double>& U);
+void UpdatePrimitvP(const Array4D<double>& U,Array4D<double>& P);
 void ControlTimestep();
 
 #endif

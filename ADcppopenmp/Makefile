@@ -26,8 +26,8 @@ coptdebug := -g -traceback
 
 OBJS = main.o hydro.o boundary.o
 
-hydro.o: hydro.cpp
-boundary.o: boundary.cpp
+hydro.o: hydro.cpp hydro.hpp
+boundary.o: boundary.cpp boundary.hpp
 main.o: main.cpp hydro.o boundary.o
 
 ${exed}/${exe}: ${OBJS}
