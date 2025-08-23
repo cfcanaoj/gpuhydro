@@ -29,34 +29,30 @@ using size_t  = std::size_t;
 template <typename T>
 class Array4D {
 public:
-  std::vector<T> data;
-  index_t n1{0}, n2{0}, n3{0}, nv{0};
-  size_t size{0};
-  Array4D() = default;
-  Array4D(index_t nv_, index_t n3_, index_t n2_, index_t n1_)
-  { resize(nv_, n3_, n2_, n1_); }
-  
-  void allocate(index_t nv_,index_t n3_, index_t n2_, index_t n1_) {
-    nv=nv_;n3 = n3_; n2 = n2_; n1 = n1_;
-    size = nv*n3*n2*n1;
-      data.assign(static_cast<size_t>(size), T{});
-  }
-  
-  inline       T& operator()(index_t n, index_t k, index_t j, index_t i)       noexcept {
-    #ifndef NDEBUG
-      assert(0<=i && i<n1 && 0<=j && j<n2 && 0<=k && k<n3 && 0<=n && n<nv);
-    #endif
-    // i fastest -> (((n)*n3 + k)*n2 + j)*n1 + i
-    return data[ (((static_cast<size_t>(n)*n3 + k)*n2) + j)*n1 + i ];
-  }
-  inline const T& operator()(index_t n, index_t k, index_t j, index_t i) const noexcept {
-    #ifndef NDEBUG
-      assert(0<=i && i<n1 && 0<=j && j<n2 && 0<=k && k<n3 && 0<=n && n<nv);
-    #endif
-    return data[ (((static_cast<size_t>(n)*n3 + k)*n2) + j)*n1 + i ];
+public:
+  T* data = nullptr;
+  int nv = 0, n3 = 0, n2 = 0, n1 = 0;
+  size_t size = 0;
+
+  void allocate(int _nv, int _n3, int _n2, int _n1) {
+    nv = _nv; n3 = _n3; n2 = _n2; n1 = _n1;
+    size = static_cast<size_t>(nv) * n3 * n2 * n1;
+    data = static_cast<T*>(malloc(sizeof(T) * size));
   }
 
-  void fill(const T& v) { std::fill(data.begin(), data.end(), v); }
+  void deallocate() {
+    free(data);
+    data = nullptr;
+  }
+
+  inline const T& operator()(int n, int k, int j, int i) const noexcept {
+    return data[((n*n3 + k)*n2 + j)*n1 + i];
+  }
+  inline  T& operator()(int n, int k, int j, int i)  noexcept {
+    return data[((n*n3 + k)*n2 + j)*n1 + i];
+  }
+  
+
 
 };
 

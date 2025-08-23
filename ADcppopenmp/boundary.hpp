@@ -17,6 +17,10 @@ namespace boundary_mod {
 void AllocateBoundaryVariables(Array4D<double>& Xs,Array4D<double>& Xe
 			      ,Array4D<double>& Ys,Array4D<double>& Ye
 			      ,Array4D<double>& Zs,Array4D<double>& Ze);
+void DeallocateBoundaryVariables(Array4D<double>& Xs,Array4D<double>& Xe
+			      ,Array4D<double>& Ys,Array4D<double>& Ye
+			      ,Array4D<double>& Zs,Array4D<double>& Ze);
+
 void SetBoundaryCondition(Array4D<double>& P
 			 ,Array4D<double>& Xs,Array4D<double>& Xe
 			 ,Array4D<double>& Ys,Array4D<double>& Ye

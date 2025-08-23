@@ -92,7 +92,7 @@ int main() {
   
   AllocateHydroVariables(U,Fx,Fy,Fz,P);
  
-  //AllocateBoundaryVariables(Xs,Xe,Ys,Ye,Zs,Ze);
+  AllocateBoundaryVariables(Xs,Xe,Ys,Ye,Zs,Ze);
   
   printf("grid size for x y z = %i %i %i\n",nx,ny,nz);
   
@@ -100,11 +100,6 @@ int main() {
   printf("entering main loop\n");
   int step = 0;
   auto time_begin = std::chrono::high_resolution_clock::now();
-#pragma omp target enter data map  (to: U.data[0: U.size], P.data[0: P.size]\
-                                      ,Fx.data[0:Fx.size],Fy.data[0:Fy.size],Fz.data[0:Fz.size]\
-  				      ,Xs.data[0:Xs.size],Xe.data[0:Xe.size]\
-				      ,Ys.data[0:Ys.size],Ye.data[0:Ye.size]\
-				      ,Zs.data[0:Zs.size],Ze.data[0:Ze.size])
 
   for (step=0;step<stepmax;step++){
 
@@ -117,18 +112,16 @@ int main() {
     UpdatePrimitvP(U,P);
 
     time_sim += dt;
-
+    //printf("dt=%e\n",dt);
     if (step % stepsnap == 0) {
 #pragma omp target update from (P.data[0:P.size])
       Output1D();
     }
   }
 
-#pragma omp target exit data map (delete: U.data[0: U.size], P.data[0: P.size]\
-                                        ,Fx.data[0:Fx.size],Fy.data[0:Fy.size],Fz.data[0:Fz.size]\
-				        ,Xs.data[0:Xs.size],Xe.data[0:Xe.size]\
-				        ,Ys.data[0:Ys.size],Ye.data[0:Ye.size]\
-				        ,Zs.data[0:Zs.size],Ze.data[0:Ze.size])
+  //DeallocateHydroVariables(U,Fx,Fy,Fz,P);
+  //DeallocateBoundaryVariables(Xs,Xe,Ys,Ye,Zs,Ze);
+  
   auto time_end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed = time_end - time_begin;
   printf("sim time [s]: %e\n", elapsed.count());

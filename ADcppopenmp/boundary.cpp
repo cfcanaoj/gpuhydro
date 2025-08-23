@@ -36,13 +36,38 @@ void AllocateBoundaryVariables(Array4D<double>& Xs,Array4D<double>& Xe
   Zs.allocate(nprim ,ngh ,jtot,itot);
   Ze.allocate(nprim ,ngh ,jtot,itot);
 
-#pragma omp target update to ( Xs.data[0: Xs.size], Xs.n1, Xs.n2, Xs.n3, Xs.nv)
-#pragma omp target update to ( Xe.data[0: Xe.size], Xe.n1, Xe.n2, Xe.n3, Xe.nv)
-#pragma omp target update to ( Ys.data[0: Ys.size], Ys.n1, Ys.n2, Ys.n3, Ys.nv)
-#pragma omp target update to ( Ye.data[0: Ye.size], Ye.n1, Ye.n2, Ye.n3, Ye.nv)
-#pragma omp target update to ( Zs.data[0: Zs.size], Zs.n1, Zs.n2, Zs.n3, Zs.nv)
-#pragma omp target update to ( Ze.data[0: Ze.size], Ze.n1, Ze.n2, Ze.n3, Ze.nv)  
+
+#pragma omp target enter data map (alloc: Xs.data[0: Xs.size])
+#pragma omp target enter data map (alloc: Xe.data[0: Xe.size])
+#pragma omp target enter data map (alloc: Ys.data[0: Ys.size])
+#pragma omp target enter data map (alloc: Ye.data[0: Ye.size])
+#pragma omp target enter data map (alloc: Zs.data[0: Zs.size])
+#pragma omp target enter data map (alloc: Ze.data[0: Ze.size])  
+#pragma omp target update to (Xs.data[0: Xs.size], Xs.n1, Xs.n2, Xs.n3, Xs.nv)
+#pragma omp target update to (Xe.data[0: Xe.size], Xe.n1, Xe.n2, Xe.n3, Xe.nv)
+#pragma omp target update to (Ys.data[0: Ys.size], Ys.n1, Ys.n2, Ys.n3, Ys.nv)
+#pragma omp target update to (Ye.data[0: Ye.size], Ye.n1, Ye.n2, Ye.n3, Ye.nv)
+#pragma omp target update to (Zs.data[0: Zs.size], Zs.n1, Zs.n2, Zs.n3, Zs.nv)
+#pragma omp target update to (Ze.data[0: Ze.size], Ze.n1, Ze.n2, Ze.n3, Ze.nv)  
+
 }
+
+
+void DeallocateBoundaryVariables(Array4D<double>& Xs,Array4D<double>& Xe
+			      ,Array4D<double>& Ys,Array4D<double>& Ye
+			      ,Array4D<double>& Zs,Array4D<double>& Ze){
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+
+
+#pragma omp target exit data map (delete: Xe.data[0: Xe.size], Xe.n1, Xe.n2, Xe.n3, Xe.nv)
+#pragma omp target exit data map (delete: Ys.data[0: Ys.size], Ys.n1, Ys.n2, Ys.n3, Ys.nv)
+#pragma omp target exit data map (delete: Ye.data[0: Ye.size], Ye.n1, Ye.n2, Ye.n3, Ye.nv)
+#pragma omp target exit data map (delete: Zs.data[0: Zs.size], Zs.n1, Zs.n2, Zs.n3, Zs.nv)
+#pragma omp target exit data map (delete: Ze.data[0: Ze.size], Ze.n1, Ze.n2, Ze.n3, Ze.nv)  
+}
+
+
 
 void SetBoundaryCondition(Array4D<double>& P,Array4D<double>& Xs,Array4D<double>& Xe
 			                    ,Array4D<double>& Ys,Array4D<double>& Ye

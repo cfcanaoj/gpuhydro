@@ -25,6 +25,7 @@ namespace hydflux_mod {
 };
 
 void AllocateHydroVariables(Array4D<double>& U, Array4D<double>& Fx,Array4D<double>& Fy,Array4D<double>& Fz,Array4D<double>& P);
+void DeallocateHydroVariables(Array4D<double>& U, Array4D<double>& Fx,Array4D<double>& Fy,Array4D<double>& Fz,Array4D<double>& P);
 void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx);
 void GetNumericalFlux2(const Array4D<double>& P,Array4D<double>& Fy);
 void GetNumericalFlux3(const Array4D<double>& P,Array4D<double>& Fz);

@@ -53,12 +53,27 @@ void AllocateHydroVariables(Array4D<double>& U,Array4D<double>& Fx,Array4D<doubl
 	for (int i=0; i<itot; i++) {
 	  P(n,k,j,i) = 0.0;
   }
-  //#pragma omp target update to ( U.data[0: U.size], U.n1, U.n2, U.n3, U.nv)
-  //#pragma omp target update to (Fx.data[0:Fx.size],Fx.n1,Fx.n2,Fx.n3,Fx.nv)
-  //#pragma omp target update to (Fy.data[0:Fy.size],Fy.n1,Fy.n2,Fy.n3,Fy.nv)
-  //#pragma omp target update to (Fz.data[0:Fz.size],Fz.n1,Fz.n2,Fz.n3,Fz.nv)
+#pragma omp target enter data map (alloc: U.data[0: U.size])
+#pragma omp target enter data map (alloc:Fx.data[0:Fx.size])
+#pragma omp target enter data map (alloc:Fy.data[0:Fy.size])
+#pragma omp target enter data map (alloc:Fz.data[0:Fz.size])
+#pragma omp target enter data map (alloc: P.data[0: P.size])
   
-  //#pragma omp target update to ( P.data[0: P.size], P.n1, P.n2, P.n3, P.nv)
+#pragma omp target update to ( U.data[0: U.size], U.n1, U.n2, U.n3, U.nv)
+#pragma omp target update to (Fx.data[0:Fx.size],Fx.n1,Fx.n2,Fx.n3,Fx.nv)
+#pragma omp target update to (Fy.data[0:Fy.size],Fy.n1,Fy.n2,Fy.n3,Fy.nv)
+#pragma omp target update to (Fz.data[0:Fz.size],Fz.n1,Fz.n2,Fz.n3,Fz.nv)
+#pragma omp target update to ( P.data[0: P.size], P.n1, P.n2, P.n3, P.nv)
+
+}
+
+void DeallocateHydroVariables(Array4D<double>& U,Array4D<double>& Fx,Array4D<double>& Fy,Array4D<double>& Fz,Array4D<double>& P){
+ 
+#pragma omp target exit data map (delete: U.data[0: U.size], U.n1, U.n2, U.n3, U.nv)
+#pragma omp target exit data map (delete:Fx.data[0:Fx.size],Fx.n1,Fx.n2,Fx.n3,Fx.nv)
+#pragma omp target exit data map (delete:Fy.data[0:Fy.size],Fy.n1,Fy.n2,Fy.n3,Fy.nv)
+#pragma omp target exit data map (delete:Fz.data[0:Fz.size],Fz.n1,Fz.n2,Fz.n3,Fz.nv)
+#pragma omp target exit data map (delete: P.data[0: P.size], P.n1, P.n2, P.n3, P.nv)
 
 }
 
