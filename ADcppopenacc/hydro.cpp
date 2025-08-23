@@ -17,11 +17,11 @@ using namespace resolution_mod;
 
 namespace hydflux_mod {
   int mconsv{5}; //!
-  HydroArrays<double> U; //! U(mconsv,ktot,jtot,itot)
+  Array4D<double> U; //! U(mconsv,ktot,jtot,itot)
   int mden{0},mrvx{1},mrvy{2},mrvz{3},meto{4};
-  HydroArrays<double> fluxx,fluxy,fluxz;
+  Array4D<double> fluxx,fluxy,fluxz;
   int nprim{5}; //!
-  HydroArrays<double> P; //! P(nprim,ktot,jtot,itot)
+  Array4D<double> P; //! P(nprim,ktot,jtot,itot)
   int nden{0},nvex{1},nvey{2},nvez{3},nene{4};
 #pragma acc declare create (U,P)
 #pragma acc declare create (fluxx,fluxy,fluxz)
@@ -55,10 +55,12 @@ void AllocateVariables(){
 	for (int i=0; i<itot; i++) {
 	  P(n,k,j,i) = 0.0;
   }
-#pragma acc update device(fluxx.data()[0:fluxx.size()],fluxx.n1,fluxx.n2,fluxx.n3,fluxx.nv)
-#pragma acc update device(fluxy.data()[0:fluxy.size()],fluxy.n1,fluxy.n2,fluxy.n3,fluxy.nv)
-#pragma acc update device(fluxz.data()[0:fluxz.size()],fluxz.n1,fluxz.n2,fluxz.n3,fluxz.nv)
-
+  
+#pragma acc update device(U.data[0:fluxx.size()],U.n1,U.n2,U.n3,U.nv)
+#pragma acc update device(fluxx.data[0:fluxx.size()],fluxx.n1,fluxx.n2,fluxx.n3,fluxx.nv)
+#pragma acc update device(fluxy.data[0:fluxy.size()],fluxy.n1,fluxy.n2,fluxy.n3,fluxy.nv)
+#pragma acc update device(fluxz.data[0:fluxz.size()],fluxz.n1,fluxz.n2,fluxz.n3,fluxz.nv)
+#pragma acc update device(P.data[0:fluxx.size()],P.n1,P.n2,P.n3,P.nv)
 }
 
 void GetNumericalFlux1(){

@@ -54,12 +54,9 @@ static void GenerateProblem() {
 				     +P(nvez,k,j,i)*P(nvez,k,j,i));
      U(meto,k,j,i) = P(nene,k,j,i)+ekin;
   };
-#pragma omp target update to (U.data()[0:U.size()],U.n1,U.n2,U.n3,U.nv)
-#pragma omp target update to (P.data()[0:P.size()],P.n1,P.n2,P.n3,P.nv)
+#pragma acc update device (U.data[0:U.size()])
+#pragma acc update device (P.data[0:P.size()])
 
-  printf("test1 %i %i %i %i \n",U.n1,U.n2,U.n3,U.nv);
-#pragma omp target update from (U.n1,U.n2,U.n3,U.nv)
-  printf("test2 %i %i %i %i \n",U.n1,U.n2,U.n3,U.nv);
 }
 
 void Output1D(){
@@ -71,7 +68,7 @@ void Output1D(){
   char outfile[20];
   int          ret;
 
-#pragma omp target update from (P.data()[0:P.size()])
+#pragma acc update host (P.data[0:P.size()])
   int jc = int((js+je)/2);
   int kc = int((ks+ke)/2);
   ret=sprintf(outfile,"snap/t%05d.dat",index);
