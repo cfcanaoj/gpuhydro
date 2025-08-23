@@ -19,12 +19,12 @@ namespace hydflux_mod {
   int mconsv{5}; //!
   Array4D<double> U; //! U(mconsv,ktot,jtot,itot)
   int mden{0},mrvx{1},mrvy{2},mrvz{3},meto{4};
-  Array4D<double> fluxx,fluxy,fluxz;
+  Array4D<double> Fx,Fy,Fz;
   int nprim{5}; //!
   Array4D<double> P; //! P(nprim,ktot,jtot,itot)
   int nden{0},nvex{1},nvey{2},nvez{3},nene{4};
 #pragma acc declare create (U,P)
-#pragma acc declare create (fluxx,fluxy,fluxz)
+#pragma acc declare create (Fx,Fy,Fz)
 
 };
 
@@ -34,9 +34,9 @@ void AllocateVariables(){
   U.allocate(mconsv,ktot,jtot,itot);
   P.allocate(nprim ,ktot,jtot,itot);
       
-  fluxx.allocate(mconsv,ktot,jtot,itot);
-  fluxy.allocate(mconsv,ktot,jtot,itot);
-  fluxz.allocate(mconsv,ktot,jtot,itot);
+  Fx.allocate(mconsv,ktot,jtot,itot);
+  Fy.allocate(mconsv,ktot,jtot,itot);
+  Fz.allocate(mconsv,ktot,jtot,itot);
 
   printf("alloc1\n");
   for (int m=0; m<mconsv; m++)
@@ -44,9 +44,9 @@ void AllocateVariables(){
       for (int j=0; j<jtot; j++)
 	for (int i=0; i<itot; i++) {
 	  U(m,k,j,i) = 0.0;
-	  fluxx(m,k,j,i) = 0.0;
-	  fluxy(m,k,j,i) = 0.0;
-	  fluxz(m,k,j,i) = 0.0;
+	  Fx(m,k,j,i) = 0.0;
+	  Fy(m,k,j,i) = 0.0;
+	  Fz(m,k,j,i) = 0.0;
   }
   printf("alloc2\n");
   for (int n=0; n<nprim; n++)
@@ -56,11 +56,11 @@ void AllocateVariables(){
 	  P(n,k,j,i) = 0.0;
   }
   
-#pragma acc update device(U.data[0:fluxx.size()],U.n1,U.n2,U.n3,U.nv)
-#pragma acc update device(fluxx.data[0:fluxx.size()],fluxx.n1,fluxx.n2,fluxx.n3,fluxx.nv)
-#pragma acc update device(fluxy.data[0:fluxy.size()],fluxy.n1,fluxy.n2,fluxy.n3,fluxy.nv)
-#pragma acc update device(fluxz.data[0:fluxz.size()],fluxz.n1,fluxz.n2,fluxz.n3,fluxz.nv)
-#pragma acc update device(P.data[0:fluxx.size()],P.n1,P.n2,P.n3,P.nv)
+#pragma acc update device( U.data[0: U.size()], U.n1, U.n2, U.n3, U.nv)
+#pragma acc update device(Fx.data[0:Fx.size()],Fx.n1,Fx.n2,Fx.n3,Fx.nv)
+#pragma acc update device(Fy.data[0:Fy.size()],Fy.n1,Fy.n2,Fy.n3,Fy.nv)
+#pragma acc update device(Fz.data[0:Fz.size()],Fz.n1,Fz.n2,Fz.n3,Fz.nv)
+#pragma acc update device( P.data[0: P.size()], P.n1, P.n2, P.n3, P.nv)
 }
 
 void GetNumericalFlux1(){
@@ -73,7 +73,7 @@ void GetNumericalFlux1(){
 	double qR = P(nden,k,j,i  );
 	double ux = 0.5e0*(P(nvex,k,j,i-1)+P(nvex,k,j,i));
 	double q_up = (ux >= 0.0) ? qL : qR;
-	fluxx(mden,k,j,i) = ux * q_up;
+	Fx(mden,k,j,i) = ux * q_up;
       }
 }
 
@@ -88,7 +88,7 @@ void GetNumericalFlux2(){
 	double qR = P(nden,k,j  ,i);
 	double uy = 0.5e0*(P(nvey,k,j-1,i)+P(nvey,k,j,i));
 	double q_up = (uy >= 0.0) ? qL : qR;
-	fluxy(mden,k,j,i) = uy * q_up;
+	Fy(mden,k,j,i) = uy * q_up;
       }
 }
 
@@ -102,7 +102,7 @@ void GetNumericalFlux3(){
 	double qR = P(nden,k  ,j,i);
 	double uz = 0.5e0*(P(nvez,k-1,j,i)+P(nvez,k,j,i));
 	double q_up = (uz >= 0.0) ? qL : qR;
-	fluxz(mden,k,j,i) = uz * q_up;
+	Fz(mden,k,j,i) = uz * q_up;
       }
 }
 
@@ -112,9 +112,9 @@ void UpdateConservU(){
   for (int k=ks; k<=ke; ++k)
     for (int j=js; j<=je; ++j)
       for (int i=is; i<=ie; ++i) {
-        double dqx = (fluxx(mden,k,j,i+1) - fluxx(mden,k,j,i)) / dx;
-        double dqy = (fluxy(mden,k,j+1,i) - fluxy(mden,k,j,i)) / dy;
-        double dqz = (fluxz(mden,k+1,j,i) - fluxz(mden,k,j,i)) / dz;
+        double dqx = (Fx(mden,k,j,i+1) - Fx(mden,k,j,i)) / dx;
+        double dqy = (Fy(mden,k,j+1,i) - Fy(mden,k,j,i)) / dy;
+        double dqz = (Fz(mden,k+1,j,i) - Fz(mden,k,j,i)) / dz;
         U(mden,k,j,i) -= dt * (dqx + dqy + dqz);
       }
 }

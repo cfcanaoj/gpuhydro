@@ -17,7 +17,7 @@ namespace hydflux_mod {
   extern int mconsv; //!
   extern Array4D<double> U; //! U(mconsv,ktot,jtot,itot)
   extern int mden,mrvx,mrvy,mrvz,meto;
-  extern Array4D<double> fluxx,fluxy,fluxz;
+  extern Array4D<double> Fx,Fy,Fz;
   extern int nprim; //!
   extern Array4D<double> P; //! P(nprim,ktot,jtot,itot)
   extern int nden,nvex,nvey,nvez,nene;

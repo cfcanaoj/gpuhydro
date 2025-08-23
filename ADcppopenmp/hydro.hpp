@@ -15,11 +15,11 @@
 namespace hydflux_mod {
   using namespace hydro_arrays_mod;
   extern int mconsv; //!
-  extern HydroArrays<double> U; //! U(mconsv,ktot,jtot,itot)
+  extern Array4D<double> U; //! U(mconsv,ktot,jtot,itot)
   extern int mden,mrvx,mrvy,mrvz,meto;
-  extern HydroArrays<double> fluxx,fluxy,fluxz;
+  extern Array4D<double> Fx,Fy,Fz;
   extern int nprim; //!
-  extern HydroArrays<double> P; //! P(nprim,ktot,jtot,itot)
+  extern Array4D<double> P; //! P(nprim,ktot,jtot,itot)
   extern int nden,nvex,nvey,nvez,nene;
 };
 

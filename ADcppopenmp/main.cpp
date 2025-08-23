@@ -18,15 +18,15 @@ static void GenerateProblem() {
   using namespace resolution_mod;
   using namespace hydflux_mod;
 
-  double cx = 0.5*(xmax-xmin), cy = 0.5*(ymax-ymin), cz = 0.5*(zmax-zmin);
+  double cx = 0.5*(xmax+xmin), cy = 0.5*(ymax+ymin), cz = 0.5*(zmax+zmin);
   double sig2 = 0.01; // 分散（適当に）
 
   for (int k=ks; k<=ke; ++k)
     for (int j=js; j<=je; ++j)
       for (int i=is; i<=ie; ++i) {
-    double x = (i - is + 0.5) * dx;
-    double y = (j - js + 0.5) * dy;
-    double z = (k - ks + 0.5) * dz;
+    double x = xmin + (i - is + 0.5) * dx;
+    double y = ymin + (j - js + 0.5) * dy;
+    double z = zmin + (k - ks + 0.5) * dz;
     double dx_ = x - cx, dy_ = y - cy, dz_ = z - cz;
     double r2 = dx_*dx_ + dy_*dy_ + dz_*dz_;
     P(nden,k,j,i) = std::exp(-r2 / (2.0*sig2));
@@ -54,12 +54,9 @@ static void GenerateProblem() {
 				     +P(nvez,k,j,i)*P(nvez,k,j,i));
      U(meto,k,j,i) = P(nene,k,j,i)+ekin;
   };
-#pragma omp target update to (U.data()[0:U.size()],U.n1,U.n2,U.n3,U.nv)
-#pragma omp target update to (P.data()[0:P.size()],P.n1,P.n2,P.n3,P.nv)
+#pragma omp target update to (U.data[0:U.size()])
+#pragma omp target update to (P.data[0:P.size()])
 
-  printf("test1 %i %i %i %i \n",U.n1,U.n2,U.n3,U.nv);
-#pragma omp target update from (U.n1,U.n2,U.n3,U.nv)
-  printf("test2 %i %i %i %i \n",U.n1,U.n2,U.n3,U.nv);
 }
 
 void Output1D(){
@@ -71,7 +68,7 @@ void Output1D(){
   char outfile[20];
   int          ret;
 
-#pragma omp target update from (P.data()[0:P.size()])
+#pragma omp target update from (P.data[0:P.size()])
 
   int jc = int((js+je)/2);
   int kc = int((ks+ke)/2);
