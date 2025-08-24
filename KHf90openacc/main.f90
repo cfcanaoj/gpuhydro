@@ -412,10 +412,7 @@
       real(8),dimension(2*mflx+madd,in,jn,kn):: leftco,rigtco
       real(8),dimension(2*mflx+madd):: leftst,rigtst
       real(8),dimension(mflx):: nflux
-!$acc declare create(leftco,rigtco)
-!$acc declare create(leftpr,rigtpr)
-
-!$acc data present(leftco,rigtco,leftpr,rigtpr)
+!$acc data create(leftco,rigtco,leftpr,rigtpr)
 
 !$acc kernels
       k=ks
@@ -526,10 +523,7 @@
       real(8),dimension(2*mflx+madd,in,jn,kn):: leftco,rigtco
       real(8),dimension(2*mflx+madd):: leftst,rigtst
       real(8),dimension(mflx):: nflux
-!$acc declare create(leftco,rigtco)
-!$acc declare create(leftpr,rigtpr)
-
-!$acc data present(leftco,rigtco,leftpr,rigtpr)
+!$acc data create(leftco,rigtco,leftpr,rigtpr)
 
 !$acc kernels
       k=ks
