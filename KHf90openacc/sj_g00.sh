@@ -9,7 +9,8 @@
 # sinfo
 # squeue
 
-module load nvhpc
+module purge
+module load nvhpc/25.7
 
 # original program
 ./kh.x

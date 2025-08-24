@@ -12,7 +12,7 @@ After you login the server, `g00.cfca.nao.ac.jp`, perform the following command.
 
 ## How to run
 
-	module load nvhpc
+	module load nvhpc/25.7
 	make
 	sbatch sj_g00.sh
 
