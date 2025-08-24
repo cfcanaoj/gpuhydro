@@ -7,4 +7,5 @@
 *.lst
 *.x
 log.dat
-*.out
+
+*.log
