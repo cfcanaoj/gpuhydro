@@ -47,5 +47,6 @@ void UpdateConservU(const Array4D<double>& Fx,const Array4D<double>& Fy,const Ar
 void UpdatePrimitvP(const Array4D<double>& U,Array4D<double>& P);
 void ControlTimestep();
 void EvaluateCh();
+void DampPsi(Array4D<double>& U);
 
 #endif

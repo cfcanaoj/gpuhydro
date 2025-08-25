@@ -98,7 +98,7 @@ static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
   
 }
 
-void Output(){
+void Output(bool& forcedamp){
   using namespace resolution_mod;
   using namespace hydflux_mod;
   static int index = 0;
@@ -107,6 +107,10 @@ void Output(){
   
   static Array4D<double> hydout;
   static bool is_inited = false;
+
+
+  if(!forcedamp && time_sim < time_out + dtout) return;
+  
 
 #pragma omp target update from (P.data[0:P.size])
   
@@ -170,7 +174,8 @@ int main() {
   using namespace resolution_mod;
   using namespace hydflux_mod;
   using namespace boundary_mod;
-  
+  const bool NoOutput = true;
+  static bool is_final = false;
   printf("setup grids and fields\n");
   
   AllocateHydroVariables(U,Fx,Fy,Fz,P);
@@ -193,13 +198,13 @@ int main() {
     GetNumericalFlux2(P,Fy);
     GetNumericalFlux3(P,Fz);
     UpdateConservU(Fx,Fy,Fz,U);
+    DampPsi(U);
     UpdatePrimitvP(U,P);
 
     time_sim += dt;
     //printf("dt=%e\n",dt);
-    if (step % stepsnap == 0) {
-      Output();
-    }
+    if (! NoOutput) Output(is_final);
+    
   }
 
   //DeallocateHydroVariables(U,Fx,Fy,Fz,P);
@@ -209,7 +214,10 @@ int main() {
   std::chrono::duration<double> elapsed = time_end - time_begin;
   printf("sim time [s]: %e\n", elapsed.count());
   printf("time/count/cell : %e\n", elapsed.count()/(nx*ny*nz)/stepmax);
-    
+
+  is_final = true;
+  Output(is_final);
+  
   printf("program has been finished\n");
   return 0;
 }

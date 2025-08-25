@@ -973,3 +973,17 @@ void EvaluateCh(){
       }
   chg = chgloc;
 }
+
+void DampPsi(Array4D<double>& U){
+  const double alphabp = 0.1e0;
+#pragma omp target teams distribute parallel for collapse(3)
+  for (int k=ks; k<=ke; k++)
+    for (int j=js; j<=je; j++)
+      for (int i=is; i<=ie; i++) {
+	double dhl = std::min({dx,dy,dz});
+	double taui = alphabp * chg/dhl;
+	  U(mbps,k,j,i) = U(mbps,k,j,i) *(1.0e0-dt*taui);
+      }
+}
+
+
