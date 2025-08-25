@@ -956,11 +956,12 @@ void ControlTimestep(){
   double dtmin;
   const double huge = 1.0e90;
   dtmin = huge;
+  /*
   int ip,jp,kp;
   ip=is;
   jp=js;
   kp=ks;
-  
+  */
   //printf("P:cs b1 b2 b3=%e %e %e %e\n",P(ncsp,ks,js,is),P(nbm1,ks,js,is),P(nbm2,ks,js,is),P(nbm3,ks,js,is));
 #pragma omp target teams distribute parallel for reduction(min:dtmin) collapse(3)
   for (int k=ks; k<=ke; k++)
@@ -990,6 +991,7 @@ void ControlTimestep(){
 }
 
 void EvaluateCh(){
+  
   double chgloc = 0.0e0;
 #pragma omp target teams distribute parallel for collapse(3) reduction(max:chgloc)
   for (int k=ks; k<=ke; k++)
@@ -1010,6 +1012,7 @@ void EvaluateCh(){
         chgloc = std::max({chgloc,ch1,ch2,ch3});
       }
   chg = chgloc;
+#pragma omp target update to (chg)
 }
 
 void DampPsi(Array4D<double>& U){

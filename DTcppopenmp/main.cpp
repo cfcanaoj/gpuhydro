@@ -45,14 +45,17 @@ static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
   //v0 = 0.0e0;
   //b0 = 0.0e0;
   csiso = sqrt(eint/d0);
-  p0 = d0*csiso*csiso;
+  p0 = d0*csiso*csiso;  
+  chg = 0.0e0; // this value is not used
+#pragma omp target update to ( csiso,chg)
+
   //printf("cs=%e",csiso);
   for (int k=ks; k<=ke; ++k)
     for (int j=js; j<=je; ++j)
       for (int i=is; i<=ie; ++i) {
-	double x = (i-is+0.5e0)*dx;
-	double y = (j-js+0.5e0)*dy;
-	double z = (k-ks+0.5e0)*dz;
+	double x = xmin+(i-is+0.5e0)*dx;
+	double y = ymin+(j-js+0.5e0)*dy;
+	double z = zmin+(k-ks+0.5e0)*dz;
 	  
 	P(nden,k,j,i) = d0;
 	P(nve1,k,j,i) = v0*(  Ahl*sin(2.0*pi*(k_ini*z/(zmax-zmin)+deltaz))
@@ -61,11 +64,10 @@ static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
 			     +Ahl*cos(2.0*pi*(k_ini*z/(zmax-zmin)+deltaz)) );
 	P(nve3,k,j,i) = v0*(  Chl*sin(2.0*pi*(k_ini*y/(ymax-ymin)+deltay))
 			     +Bhl*cos(2.0*pi*(k_ini*x/(xmax-xmin)+deltax)) );
-	
+	P(nene,k,j,i)  = eint/d0; //specific internel energy	
 	P(npre,k,j,i)  =p0;
-
-	P(nene,k,j,i)  = eint/d0; //specific internel energy
-
+	P(ncsp,k,j,i) = csiso;
+	
 	P(nbm1,k,j,i) = b0*(  Ahl*sin(2.0*pi*(k_ini*z/(zmax-zmin)+deltaz))
 			     +Chl*cos(2.0*pi*(k_ini*y/(ymax-ymin)+deltay)) );
 	P(nbm2,k,j,i) = b0*(  Bhl*sin(2.0*pi*(k_ini*x/(xmax-xmin)+deltax))
@@ -73,15 +75,6 @@ static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
 	P(nbm3,k,j,i) = b0*(  Chl*sin(2.0*pi*(k_ini*y/(ymax-ymin)+deltay))
 			     +Bhl*cos(2.0*pi*(k_ini*x/(xmax-xmin)+deltax)) );
     };
-
-  for (int k=ks; k<=ke; ++k)
-    for (int j=js; j<=je; ++j)
-      for (int i=is; i<=ie; ++i) {
-	P(nden,k,j,i) = P(npre,k,j,i);
-	P(ncsp,k,j,i) = csiso;
-    };
-
-
   
   for (int k=ks; k<=ke; ++k)
     for (int j=js; j<=je; ++j)
@@ -98,7 +91,9 @@ static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
 				     +P(nbm3,k,j,i)*P(nbm3,k,j,i));
      U(meto,k,j,i) = P(nene,k,j,i)*P(nden,k,j,i) + ekin + emag;
   };
-  
+#pragma omp target update to ( U.data[0: U.size])
+#pragma omp target update to ( P.data[0: P.size])
+
 }
 
 void Output(bool& forcedamp){
@@ -195,8 +190,8 @@ int main() {
   for (step=0;step<stepmax;step++){
 
     ControlTimestep(); 
-    //if (step%300 ==0 && !NoOutput) printf("step=%i time=%e dt=%e\n",step,time_sim,dt);
-    printf("step=%i time=%e dt=%e\n",step,time_sim,dt);
+    if (step%300 ==0 && !NoOutput) printf("step=%i time=%e dt=%e\n",step,time_sim,dt);
+    //printf("step=%i time=%e dt=%e\n",step,time_sim,dt);
     SetBoundaryCondition(P,Xs,Xe,Ys,Ye,Zs,Ze);
     EvaluateCh();
     GetNumericalFlux1(P,Fx);
