@@ -6,6 +6,9 @@
 */
 #include <cmath>
 #include <cstdio>
+#include <cstring>
+#include <cerrno>
+
 #include <algorithm>
 #include <chrono>
 
@@ -95,26 +98,70 @@ static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
   
 }
 
-void Output1D(){
+void Output(){
   using namespace resolution_mod;
   using namespace hydflux_mod;
   static int index = 0;
-  FILE *ofile;
-  int i;
-  char outfile[20];
-  int          ret;
+  const int gs = 1;
+  const int nvar = 9;
+  
+  static Array4D<double> hydout;
+  static bool is_inited = false;
 
-  int jc = int((js+je)/2);
-  int kc = int((ks+ke)/2);
-  ret=sprintf(outfile,"snap/t%05d.dat",index);
-  (void)system("mkdir -p snap");
-  ofile = fopen(outfile,"w");
-  fprintf(ofile,  "# %12.7e\n",time_sim);
-  fprintf(ofile,  "# %12s %12s %12s\n","x[cm]","rho[g/cm^3]","v_x[cm/s]");
-  for(i=is;i<=ie;i++){
-    fprintf(ofile,"  %12.5e %12.5e %12.5e \n",xmin+(i-is+0.5)*dx,P(nden,kc,jc,i),P(nve1,kc,jc,i));
+#pragma omp target update from (P.data[0:P.size])
+  
+  if (! is_inited){
+    (void)system("mkdir -p bindata");
+    hydout.allocate(nvar,nz+2*gs,ny+2*gs,nx*2*gs);
+    is_inited = true;
   }
-  fclose(ofile);
+  // ---- output text (unf%05d.dat) ----
+  char fname_unf[256];
+  std::snprintf(fname_unf, sizeof(fname_unf), "bindata/unf%05d.dat", index);
+  FILE* fp_unf = std::fopen(fname_unf, "w");
+  if (!fp_unf){
+    std::fprintf(stderr, "open failed: %s : %s\n", fname_unf, std::strerror(errno));
+  }
+  
+  std::fprintf(fp_unf, "# %.17g %.17g\n", time_sim,dt);
+  std::fprintf(fp_unf, "# %d %d\n", nx, gs);
+  std::fprintf(fp_unf, "# %d %d\n", ny, gs);
+  std::fprintf(fp_unf, "# %d %d\n", nz, gs);
+  std::fclose(fp_unf);
+  
+  // ---- output data (bin%05d.dat) ----
+
+  for (int k=ks-gs;k<=ke+gs;k++)
+    for (int j=js-gs;j<=je+gs;j++)
+      for (int i=is-gs;i<=ie+gs;i++){
+	hydout(0,k-1,j-1,i-1) = P(nden,k,j,i);
+	hydout(1,k-1,j-1,i-1) = P(nve1,k,j,i);
+	hydout(2,k-1,j-1,i-1) = P(nve2,k,j,i);
+	hydout(3,k-1,j-1,i-1) = P(nve3,k,j,i);
+	hydout(4,k-1,j-1,i-1) = P(nbm1,k,j,i);
+	hydout(5,k-1,j-1,i-1) = P(nbm2,k,j,i);
+	hydout(6,k-1,j-1,i-1) = P(nbm3,k,j,i);
+	hydout(7,k-1,j-1,i-1) = P(nbps,k,j,i);
+	hydout(8,k-1,j-1,i-1) = P(npre,k,j,i); 
+  }
+  
+  char fname_bin[256];
+  std::snprintf(fname_bin, sizeof(fname_bin), "bindata/bin%05d.dat",index);
+  FILE* fp_bin = std::fopen(fname_bin, "wb");
+
+  auto wbin = [&](const void* ptr, size_t n) {
+		const size_t wrote = std::fwrite(ptr, sizeof(double), n, fp_bin);
+		if (wrote != n) {
+		  std::fclose(fp_bin);
+		  if (!fp_bin){
+		    std::fprintf(stderr, "open failed: %s : %s\n", fname_bin, std::strerror(errno));
+		  }
+		}
+	      };
+
+  wbin(hydout.data, hydout.size);
+  std::fclose(fp_bin);
+
   index += 1;
 }
 
@@ -151,8 +198,7 @@ int main() {
     time_sim += dt;
     //printf("dt=%e\n",dt);
     if (step % stepsnap == 0) {
-#pragma omp target update from (P.data[0:P.size])
-      Output1D();
+      Output();
     }
   }
 

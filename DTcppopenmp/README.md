@@ -5,7 +5,7 @@ After you login the server, `g00.cfca.nao.ac.jp`, follow the instruction.
 
     cd /gwork0/<username>
     git clone git@github.com:cfcanaoj/gpuhydro gpuhydro
-    cd gpuhydro/ADcppopenmp
+    cd gpuhydro/DTcppopenmp
     
 
 ## How to run
