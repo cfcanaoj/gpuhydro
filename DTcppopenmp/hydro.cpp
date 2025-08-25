@@ -405,8 +405,8 @@ void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
 	  double Plefte [nprim];
 	  double dsvp,dsvm,dsv;	  
 	  for (int n=0; n<nprim; n++){
-	    dsvp =  Prigtc1[n]- Pleftc1[n];
-	    dsvm =  Pleftc1[n]- Pleftc2[n];
+	    dsvp =  Prigtc1[n]- Pleftc2[n];
+	    dsvm =  Pleftc2[n]- Pleftc1[n];
 	    vanLeer(dsvp,dsvm,dsv);
 	    Plefte[n] = Pleftc1[n] + 0.5e0*dsv;
 	  }
@@ -470,7 +470,7 @@ void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
 	 double Prigte [nprim];
 	  for (int n=0; n<nprim; n++){
 	    dsvp =  Prigtc2[n]- Prigtc1[n];
-	    dsvm =  Prigtc1[n]- Pleftc1[n];
+	    dsvm =  Prigtc1[n]- Pleftc2[n];
 	    vanLeer(dsvp,dsvm,dsv);
 	    Prigte[n] = Prigtc1[n] - 0.5e0*dsv;
 	  }
