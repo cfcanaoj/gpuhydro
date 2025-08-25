@@ -1000,7 +1000,7 @@ void EvaluateCh(){
 	double css = P(ncsp,k,j,i)*P(ncsp,k,j,i);
 	double ca1 = P(nbm1,k,j,i)*P(nbm1,k,j,i) / P(nden,k,j,i);
 	double ca2 = P(nbm2,k,j,i)*P(nbm2,k,j,i) / P(nden,k,j,i);
-	double ca3 = P(nbm2,k,j,i)*P(nbm2,k,j,i) / P(nden,k,j,i);
+	double ca3 = P(nbm3,k,j,i)*P(nbm3,k,j,i) / P(nden,k,j,i);
 	double cts = css + ca1 + ca2 + ca3;
         double cm1 = sqrt((cts+sqrt(cts*cts-4.0e0*css*ca1))/2.0e0);
         double ch1 = (std::abs(P(nve1,k,j,i))+cm1);
