@@ -192,6 +192,7 @@ int main() {
   for (step=0;step<stepmax;step++){
 
     ControlTimestep(); 
+    if (step%300 ==0 && !NoOutput) printf("step=%i time=%e dt=%e",step,time,dt);
     SetBoundaryCondition(P,Xs,Xe,Ys,Ye,Zs,Ze);
     EvaluateCh();
     GetNumericalFlux1(P,Fx);
@@ -204,6 +205,8 @@ int main() {
     time_sim += dt;
     //printf("dt=%e\n",dt);
     if (! NoOutput) Output(is_final);
+
+    if(time_sim > time_max) break;
     
   }
 
