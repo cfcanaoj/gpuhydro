@@ -77,10 +77,10 @@ void DeallocateHydroVariables(Array4D<double>& U,Array4D<double>& Fx,Array4D<dou
 
 
 void vanLeer(const double& dsvp,const double& dsvm,double& dsv){
-    if(dsvp *dsvm >= 0.0e0){
+    if(dsvp * dsvm > 0.0e0){
       dsv = 2.0e0*dsvp *dsvm/(dsvp + dsvm);
     }else{
-      dsv = 0.0;
+      dsv = 0.0e0;
     }
 }
 
@@ -224,7 +224,7 @@ void HLLD(const double (&leftst)[2*mconsv+madd],const double (&rigtst)[2*mconsv+
 // compute middle and alfven wave
 //
         sdl = std::min(-1e-20,sl - vxl);
-        sdr = std::max(  1e-20,sr - vxr);
+        sdr = std::max( 1e-20,sr - vxr);
         rosdl = rol*sdl;
         rosdr = ror*sdr;
 
@@ -247,7 +247,7 @@ void HLLD(const double (&leftst)[2*mconsv+madd],const double (&rigtst)[2*mconsv+
            bxs = 0.5e0*(leftst[mubu]+rigtst[mubu]);
            bxsq = bxs*bxs;
            temp_fst = rosdl*sdml - bxsq;
-           sign1 = std::copysign(1.0e0,abs(temp_fst)-eps);
+           sign1 = std::copysign(1.0e0,std::abs(temp_fst)-eps);
 
            maxs1 = std::max(0.0e0,sign1);
            mins1 = std::min(0.0e0,sign1);
@@ -278,7 +278,7 @@ void HLLD(const double (&leftst)[2*mconsv+madd],const double (&rigtst)[2*mconsv+
 // compute Ur*
 //
            temp_fst = rosdr*sdmr - bxsq;
-           sign1 = std::copysign(1.0e0,abs(temp_fst)-eps);
+           sign1 = std::copysign(1.0e0,std::abs(temp_fst)-eps);
            maxs1 = std::max(0.0e0,sign1);
            mins1 = std::min(0.0e0,sign1);
 
@@ -310,7 +310,7 @@ void HLLD(const double (&leftst)[2*mconsv+madd],const double (&rigtst)[2*mconsv+
            sqrtrol = sqrt(rolst);
            sqrtror = sqrt(rorst);
 
-           abbx = abs(bxs);
+           abbx = std::abs(bxs);
            signbx = std::copysign(1.0e0,bxs);
            sign1  = std::copysign(1.0e0,abbx-eps);
 
@@ -401,6 +401,7 @@ void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
 	    Prigtc1[n] = P(n,k,j,i  );
 	    Prigtc2[n] = P(n,k,j,i+1);
 	  }
+	  //if(i==is) printf("Pleftc1: %e %e %e %e\n",Pleftc1[mden],Pleftc1[mrvu],Pleftc1[meto],Pleftc1[mubp]);
 	  // Calculte Left state
 	  double Plefte [nprim];
 	  double dsvp,dsvm,dsv;	  
@@ -411,6 +412,7 @@ void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
 	    Plefte[n] = Pleftc1[n] + 0.5e0*dsv;
 	  }
 
+	  //if(i==is)printf("Plefte: %e %e %e %e\n",Plefte[mden],Plefte[mrvu],Plefte[meto],Plefte[mubp]);
 	  double Clefte [2*mconsv+madd];
 	Clefte[mudn] = Plefte[nden]; // rho
 	Clefte[muvu] = Plefte[nve1]*Plefte[nden]; // rho v_x
@@ -531,6 +533,7 @@ void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
          Crigte[mvel] = Prigte[nve1]; //direction dependent
          Crigte[mpre] = ptl;
 	 //Calculate flux
+	 //if(i==is)printf("Cleft: %e %e %e %e\n",Clefte[mden],Clefte[mrvu],Clefte[meto],Clefte[mubp]);
 	 double numflux [mconsv];
 	 HLLD(Clefte,Crigte,numflux);
 	 Fx(mden,k,j,i) = numflux[mden];
@@ -549,7 +552,6 @@ void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
 	 
 	}// i-loop
   }// j,k-loop
-
 }
 void GetNumericalFlux2(const Array4D<double>& P,Array4D<double>& Fy){
   /* | Pleftc1   | Pleftc2 | Prigtc1   | Prigtc2   |              */
@@ -566,17 +568,17 @@ void GetNumericalFlux2(const Array4D<double>& P,Array4D<double>& Fy){
 	  for (int n=0; n<nprim; n++){
 	    Pleftc1[n] = P(n,k,j-2,i);
 	    Pleftc2[n] = P(n,k,j-1,i);
-	    Prigtc1[n] = P(n,k,j  ,i  );
+	    Prigtc1[n] = P(n,k,j  ,i);
 	    Prigtc2[n] = P(n,k,j+1,i);
 	  }
 	  double Plefte [nprim];
 	  double dsvp,dsvm,dsv;
 	  // Calculte Left state	  
 	  for (int n=0; n<nprim; n++){
-	    dsvp =  Prigtc1[n]- Pleftc1[n];
-	    dsvm =  Pleftc1[n]- Pleftc2[n];
+	    dsvp =  Prigtc1[n]- Pleftc2[n];
+	    dsvm =  Pleftc2[n]- Pleftc1[n];
 	    vanLeer(dsvp,dsvm,dsv);
-	    Plefte[n] = Pleftc1[n] + 0.5e0*dsv;
+	    Plefte[n] = Pleftc2[n] + 0.5e0*dsv;
 	  }
 	  double Clefte [2*mconsv+madd];
 	  //direction dependent w,u,v
@@ -683,7 +685,7 @@ void GetNumericalFlux2(const Array4D<double>& P,Array4D<double>& Fy){
 	Crigte[mfbw] =  Prigte[nbm1]*Prigte[nve2]
 	               -Prigte[nve1]*Prigte[nbm2];
 	Crigte[mfbu] =  0.0e0;
-	Crigte[mfbw] =  Prigte[nbm3]*Prigte[nve2]
+	Crigte[mfbv] =  Prigte[nbm3]*Prigte[nve2]
 	               -Prigte[nve3]*Prigte[nbm2];
 	Crigte[mfbp] = 0.0e0;  // psi
      
@@ -718,7 +720,6 @@ void GetNumericalFlux2(const Array4D<double>& P,Array4D<double>& Fy){
 	 
 	}// j-loop
   }// k,i-loop
-
 }
 
 void GetNumericalFlux3(const Array4D<double>& P,Array4D<double>& Fz){
@@ -892,6 +893,11 @@ void GetNumericalFlux3(const Array4D<double>& P,Array4D<double>& Fz){
 
 void UpdateConservU(const Array4D<double>& Fx,const Array4D<double>& Fy,const Array4D<double>& Fz,Array4D<double>& U){
 
+  //printf("pre  U:%e %e %e %e\n", U(mden,ks,js,is), U(mrv3,ks,js,is), U(mbm3,ks,js,is), U(meto,ks,js,is));
+  //printf("pre Fx:%e %e %e %e\n",Fx(mden,ks,js,is),Fx(mrv3,ks,js,is),Fx(mbm3,ks,js,is),Fx(meto,ks,js,is));
+  //printf("pre Fy:%e %e %e %e\n",Fy(mden,ks,js,is),Fy(mrv3,ks,js,is),Fy(mbm3,ks,js,is),Fy(meto,ks,js,is));
+  //printf("pre Fz:%e %e %e %e\n",Fz(mden,ks,js,is),Fz(mrv3,ks,js,is),Fz(mbm3,ks,js,is),Fz(meto,ks,js,is));
+  
 #pragma omp target teams distribute parallel for collapse(4)
   for (int m=0; m<mconsv; m++)
     for (int k=ks; k<=ke; k++)
@@ -900,12 +906,14 @@ void UpdateConservU(const Array4D<double>& Fx,const Array4D<double>& Fy,const Ar
 	  U(m,k,j,i) -= dt * ( (Fx(m,k,j,i+1) - Fx(m,k,j,i)) / dx
 	                      +(Fy(m,k,j+1,i) - Fy(m,k,j,i)) / dy
 			      +(Fz(m,k+1,j,i) - Fz(m,k,j,i)) / dz);
-      }
+  }
+  //printf("aft U:%e %e %e %e\n",U(mden,ks,js,is),U(mrv1,ks,js,is),U(mbm1,ks,js,is),U(meto,ks,js,is));
 }
 
 
 void UpdatePrimitvP(const Array4D<double>& U,Array4D<double>& P){
 
+  //printf("U:et b1 b2 b3=%e %e %e %e\n",U(meto,ks,js,is),U(mbm1,ks,js,is),U(mbm2,ks,js,is),U(mbm3,ks,js,is));
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke; ++k)
     for (int j=js; j<=je; ++j)
@@ -933,9 +941,10 @@ void UpdatePrimitvP(const Array4D<double>& U,Array4D<double>& P){
 
 void ControlTimestep(){
   double dtmin;
-  const double eps = 1.0e-10;
-  dtmin = eps;
-#pragma omp target teams distribute parallel for collapse(3)
+  const double huge = 1.0e90;
+  dtmin = huge;
+  //printf("P:cs b1 b2 b3=%e %e %e %e\n",P(ncsp,ks,js,is),P(nbm1,ks,js,is),P(nbm2,ks,js,is),P(nbm3,ks,js,is));
+#pragma omp target teams distribute parallel for reduction(min:dtmin) collapse(3)
   for (int k=ks; k<=ke; k++)
     for (int j=js; j<=je; j++)
       for (int i=is; i<=ie; i++) {
@@ -948,7 +957,10 @@ void ControlTimestep(){
 				    ,dz/(std::abs(P(nve3,k,j,i))+ctot)});
 	dtmin = std::min(dtminloc,dtmin);
       }
-  dt = 0.5*dtmin;
+  dt = 0.05e0*dtmin;
+  //printf("dt=%e\n",dtmin);
+  //std::abort();
+#pragma omp target update from (dt)
 }
 
 void EvaluateCh(){

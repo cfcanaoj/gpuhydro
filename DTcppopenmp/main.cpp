@@ -45,7 +45,7 @@ static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
   b0 = sqrt(emag*2.0);
   csiso = sqrt(eint/d0);
   p0 = d0*csiso*csiso;
-  
+  //printf("cs=%e",csiso);
   for (int k=ks; k<=ke; ++k)
     for (int j=js; j<=je; ++j)
       for (int i=is; i<=ie; ++i) {
@@ -174,7 +174,7 @@ int main() {
   using namespace resolution_mod;
   using namespace hydflux_mod;
   using namespace boundary_mod;
-  const bool NoOutput = true;
+  const bool NoOutput = false;
   static bool is_final = false;
   printf("setup grids and fields\n");
   
@@ -192,7 +192,8 @@ int main() {
   for (step=0;step<stepmax;step++){
 
     ControlTimestep(); 
-    if (step%300 ==0 && !NoOutput) printf("step=%i time=%e dt=%e",step,time,dt);
+    //if (step%300 ==0 && !NoOutput) printf("step=%i time=%e dt=%e\n",step,time_sim,dt);
+    printf("step=%i time=%e dt=%e\n",step,time_sim,dt);
     SetBoundaryCondition(P,Xs,Xe,Ys,Ye,Zs,Ze);
     EvaluateCh();
     GetNumericalFlux1(P,Fx);
@@ -215,6 +216,7 @@ int main() {
   
   auto time_end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed = time_end - time_begin;
+  printf("exiting main loop time=%e, step=%i\n",time_sim,step);
   printf("sim time [s]: %e\n", elapsed.count());
   printf("time/count/cell : %e\n", elapsed.count()/(nx*ny*nz)/stepmax);
 

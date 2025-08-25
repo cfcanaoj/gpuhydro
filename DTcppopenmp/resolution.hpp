@@ -14,9 +14,9 @@ namespace resolution_mod {
   inline constexpr double time_max = 5.0e0;
   inline constexpr double dtout = 5.0e0/600;
   
-  inline constexpr int nx{128}; //! resolution for x
-  inline constexpr int ny{128}; //! resolution for y
-  inline constexpr int nz{128}; //! resolution for z
+  inline constexpr int nx{32}; //! resolution for x
+  inline constexpr int ny{32}; //! resolution for y
+  inline constexpr int nz{32}; //! resolution for z
   inline constexpr int ngh{2};  //! numeber of ghost mesh
   inline constexpr int itot = nx + 2 * ngh+1; //! Like ZEUS-2D
   inline constexpr int jtot = ny + 2 * ngh+1; // 
