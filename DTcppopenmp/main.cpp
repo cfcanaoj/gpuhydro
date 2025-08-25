@@ -40,9 +40,10 @@ static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
   double deltax = 0.1e0,deltay = 0.2e0,deltaz = 0.3e0; // randam phase
 
   pi = acos(-1.0e0);
-  
   v0 = sqrt(ekin*2.0e0/d0);
   b0 = sqrt(emag*2.0);
+  //v0 = 0.0e0;
+  //b0 = 0.0e0;
   csiso = sqrt(eint/d0);
   p0 = d0*csiso*csiso;
   //printf("cs=%e",csiso);
@@ -62,6 +63,8 @@ static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
 			     +Bhl*cos(2.0*pi*(k_ini*x/(xmax-xmin)+deltax)) );
 	
 	P(npre,k,j,i)  =p0;
+
+	P(nene,k,j,i)  = eint/d0; //specific internel energy
 
 	P(nbm1,k,j,i) = b0*(  Ahl*sin(2.0*pi*(k_ini*z/(zmax-zmin)+deltaz))
 			     +Chl*cos(2.0*pi*(k_ini*y/(ymax-ymin)+deltay)) );
@@ -93,7 +96,7 @@ static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
     double emag = 0.5              *( P(nbm1,k,j,i)*P(nbm1,k,j,i)
 	        		     +P(nbm2,k,j,i)*P(nbm2,k,j,i)
 				     +P(nbm3,k,j,i)*P(nbm3,k,j,i));
-     U(meto,k,j,i) = P(nene,k,j,i) + ekin + emag;
+     U(meto,k,j,i) = P(nene,k,j,i)*P(nden,k,j,i) + ekin + emag;
   };
   
 }

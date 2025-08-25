@@ -381,11 +381,7 @@ void HLLD(const double (&leftst)[2*mconsv+madd],const double (&rigtst)[2*mconsv+
 }
 
 void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
-  /* | Pleftc1   | Pleftc2 | Prigtc1   | Prigtc2   |              */
-  /*                     You are here                             */
-  
 
-  
 #pragma omp target teams distribute parallel for collapse(2)
     for (int k=ks; k<=ke; k++)
       for (int j=js; j<=je; j++){
@@ -404,12 +400,14 @@ void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
 	  //if(i==is) printf("Pleftc1: %e %e %e %e\n",Pleftc1[mden],Pleftc1[mrvu],Pleftc1[meto],Pleftc1[mubp]);
 	  // Calculte Left state
 	  double Plefte [nprim];
-	  double dsvp,dsvm,dsv;	  
+	  double dsvp,dsvm,dsv;
+	  /* | Pleftc1   | Pleftc2 =>| Prigtc1   | Prigtc2   |  */
+	  /*                     You are here                   */
 	  for (int n=0; n<nprim; n++){
 	    dsvp =  Prigtc1[n]- Pleftc2[n];
 	    dsvm =  Pleftc2[n]- Pleftc1[n];
 	    vanLeer(dsvp,dsvm,dsv);
-	    Plefte[n] = Pleftc1[n] + 0.5e0*dsv;
+	    Plefte[n] = Pleftc2[n] + 0.5e0*dsv;
 	  }
 
 	  //if(i==is)printf("Plefte: %e %e %e %e\n",Plefte[mden],Plefte[mrvu],Plefte[meto],Plefte[mubp]);
@@ -439,7 +437,7 @@ void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
 
 	Clefte[mfdn] = Plefte[nden]*Plefte[nve1];
 	Clefte[mfvu] = Plefte[nden]*Plefte[nve1]*Plefte[nve1] 
-	                   + ptl-Plefte[nbm1]*Plefte[nbm1];
+	                      + ptl-Plefte[nbm1]*Plefte[nbm1];
 	Clefte[mfvv] = Plefte[nden]*Plefte[nve2]*Plefte[nve1]
 	                           -Plefte[nbm2]*Plefte[nbm1];
         Clefte[mfvw] = Plefte[nden]*Plefte[nve3]*Plefte[nve1]
@@ -469,6 +467,9 @@ void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
          Clefte[mvel] = Plefte[nve1];//direction dependent
          Clefte[mpre] = ptl;
 	 // Calculte Right state
+	 
+	  /* | Pleftc1   | Pleftc2 |<= Prigtc1   | Prigtc2   |  */
+	  /*                     You are here                   */
 	 double Prigte [nprim];
 	  for (int n=0; n<nprim; n++){
 	    dsvp =  Prigtc2[n]- Prigtc1[n];
@@ -573,7 +574,10 @@ void GetNumericalFlux2(const Array4D<double>& P,Array4D<double>& Fy){
 	  }
 	  double Plefte [nprim];
 	  double dsvp,dsvm,dsv;
-	  // Calculte Left state	  
+	  
+	  /* | Pleftc1   | Pleftc2 =>| Prigtc1   | Prigtc2   |  */
+	  /*                     You are here                   */
+	  // Calculte Left state 
 	  for (int n=0; n<nprim; n++){
 	    dsvp =  Prigtc1[n]- Pleftc2[n];
 	    dsvm =  Pleftc2[n]- Pleftc1[n];
@@ -636,11 +640,14 @@ void GetNumericalFlux2(const Array4D<double>& P,Array4D<double>& Fy){
 			      )/2.0e0);
          Clefte[mvel] = Plefte[nve2];//direction dependent
          Clefte[mpre] = ptl;
+	 
+	  /* | Pleftc1   | Pleftc2 |<= Prigtc1   | Prigtc2   |  */
+	  /*                     You are here                   */
 	 // Calculte Right state	
 	  double Prigte [nprim];
 	  for (int n=0; n<nprim; n++){
 	    dsvp =  Prigtc2[n]- Prigtc1[n];
-	    dsvm =  Prigtc1[n]- Pleftc1[n];
+	    dsvm =  Prigtc1[n]- Pleftc2[n];
 	    vanLeer(dsvp,dsvm,dsv);
 	    Prigte[n] = Prigtc1[n] - 0.5e0*dsv;
 	  }
@@ -739,14 +746,17 @@ void GetNumericalFlux3(const Array4D<double>& P,Array4D<double>& Fz){
 	    Prigtc1[n] = P(n,k  ,j,i);
 	    Prigtc2[n] = P(n,k+1,j,i);
 	  }
+	  
+	  /* | Pleftc1   | Pleftc2 =>| Prigtc1   | Prigtc2   |  */
+	  /*                     You are here                   */
 	  // Calculte Left state
 	  double Plefte [nprim];
 	  double dsvp,dsvm,dsv;  
 	  for (int n=0; n<nprim; n++){
-	    dsvp =  Prigtc1[n]- Pleftc1[n];
-	    dsvm =  Pleftc1[n]- Pleftc2[n];
+	    dsvp =  Prigtc1[n]- Pleftc2[n];
+	    dsvm =  Pleftc2[n]- Pleftc1[n];
 	    vanLeer(dsvp,dsvm,dsv);
-	    Plefte[n] = Pleftc1[n] + 0.5e0*dsv;
+	    Plefte[n] = Pleftc2[n] + 0.5e0*dsv;
 	  }
 	  double Clefte [2*mconsv+madd];
 	  //direction dependent v,w,u
@@ -802,13 +812,16 @@ void GetNumericalFlux3(const Array4D<double>& P,Array4D<double>& Fz){
                                   -4.0e0*css*Plefte[nbm3]*Plefte[nbm3]  //direction dependent
                                             /Plefte[nden])   
 			      )/2.0e0);
-         Clefte[mvel] = Plefte[nve2];//direction
+         Clefte[mvel] = Plefte[nve3];//direction
          Clefte[mpre] = ptl;
+
+	  /* | Pleftc1   | Pleftc2 |<= Prigtc1   | Prigtc2   |  */
+	  /*                     You are here                   */
 	 // Calculte Right state
 	  double Prigte [nprim];	  
 	  for (int n=0; n<nprim; n++){
 	    dsvp =  Prigtc2[n]- Prigtc1[n];
-	    dsvm =  Prigtc1[n]- Pleftc1[n];
+	    dsvm =  Prigtc1[n]- Pleftc2[n];
 	    vanLeer(dsvp,dsvm,dsv);
 	    Prigte[n] = Prigtc1[n] - 0.5e0*dsv;
 	  }
@@ -878,7 +891,7 @@ void GetNumericalFlux3(const Array4D<double>& P,Array4D<double>& Fz){
 	 Fz(mrv3,k,j,i) = numflux[mrvu];
 	 Fz(meto,k,j,i) = numflux[meto];
 	 Fz(mbm1,k,j,i) = numflux[mbmv];
-	 Fx(mbm2,k,j,i) = numflux[mbmw];
+	 Fz(mbm2,k,j,i) = numflux[mbmw];
 	 //Fz(mbm3,k,j,i) = numflux[mbm];
 	 
 	 Fz(mbm3,k,j,i) = 0.5e0*    (Clefte[mubp]+Crigte[mubp])
@@ -928,7 +941,7 @@ void UpdatePrimitvP(const Array4D<double>& U,Array4D<double>& P){
 	 double emag = 0.5e0*( U(mbm1,k,j,i)*U(mbm1,k,j,i)
 			      +U(mbm2,k,j,i)*U(mbm2,k,j,i)
 			      +U(mbm3,k,j,i)*U(mbm3,k,j,i));
-         P(nene,k,j,i) =  U(meto,k,j,i)-ekin-emag;
+         P(nene,k,j,i) =  (U(meto,k,j,i)-ekin-emag)/U(mden,k,j,i);//specific internal energy
 	 P(npre,k,j,i) =  U(mden,k,j,i) * csiso * csiso;
 	 P(ncsp,k,j,i) =  csiso;
 	 P(nbm1,k,j,i) =  U(mbm1,k,j,i);
@@ -943,6 +956,11 @@ void ControlTimestep(){
   double dtmin;
   const double huge = 1.0e90;
   dtmin = huge;
+  int ip,jp,kp;
+  ip=is;
+  jp=js;
+  kp=ks;
+  
   //printf("P:cs b1 b2 b3=%e %e %e %e\n",P(ncsp,ks,js,is),P(nbm1,ks,js,is),P(nbm2,ks,js,is),P(nbm3,ks,js,is));
 #pragma omp target teams distribute parallel for reduction(min:dtmin) collapse(3)
   for (int k=ks; k<=ke; k++)
@@ -956,11 +974,19 @@ void ControlTimestep(){
 				    ,dy/(std::abs(P(nve2,k,j,i))+ctot)
 				    ,dz/(std::abs(P(nve3,k,j,i))+ctot)});
 	dtmin = std::min(dtminloc,dtmin);
+	/* if(dtminloc < dtmin){//for debug
+	  dtmin = dtminloc;
+	  ip=i;
+	  jp=j;
+	  kp=k;
+	  }*/
+	
       }
   dt = 0.05e0*dtmin;
   //printf("dt=%e\n",dtmin);
   //std::abort();
 #pragma omp target update from (dt)
+  //  printf("P:(v1 v2 v3),(b1 b2 b3)=(%e %e %e),(%e %e %e)\n",P(nve1,kp,jp,ip),P(nve2,kp,jp,ip),P(nve3,kp,jp,ip),P(nbm1,kp,jp,ip),P(nbm2,kp,jp,ip),P(nbm3,kp,jp,ip));
 }
 
 void EvaluateCh(){
