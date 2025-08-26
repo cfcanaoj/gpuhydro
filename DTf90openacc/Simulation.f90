@@ -485,6 +485,8 @@
      &                    +b1(i,j,k)**2   &
      &                    +b2(i,j,k)**2   &
      &                    +b3(i,j,k)**2)
+          
+          ei(i,j,k) = ei(i,j,k)/d(i,j,k)
 ! adiabatic
 !           p(i,j,k) =  ei(i,j,k)*(gam-1.0d0)
 !          cs(i,j,k) =  sqrt(gam*p(i,j,k)/d(i,j,k))
