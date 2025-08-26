@@ -96,6 +96,69 @@ static void GenerateProblem(Array4D<double>& P,Array4D<double>& U) {
 
 }
 
+static void GenerateProblem2(Array4D<double>& P,Array4D<double>& U) {
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+
+  double eint = 1.0e0;
+  double denc = 1.0e0;
+  csiso = sqrt(eint/denc);
+  chg = 0.0e0;
+#pragma omp target update to ( csiso,chg)
+
+  double pres = denc=csiso*csiso;
+
+  double xc = 0.5*(xmax + xmin);
+  double yc = 0.5*(ymax + ymin);
+  double zc = 0.5*(zmax + zmin);
+  double sigma2x = pow((0.1e0*(xmax-xmin)),2);
+  double sigma2y = pow((0.1e0*(ymax-ymin)),2);
+  double sigma2z = pow((0.1e0*(zmax-zmin)),2);
+  
+  //printf("cs=%e",csiso);
+  for (int k=ks; k<=ke; ++k)
+    for (int j=js; j<=je; ++j)
+      for (int i=is; i<=ie; ++i) {
+	double x = xmin+(i-is+0.5e0)*dx;
+	double y = ymin+(j-js+0.5e0)*dy;
+	double z = zmin+(k-ks+0.5e0)*dz;
+	  
+	P(nden,k,j,i) = denc;
+	P(nve1,k,j,i) = 0.3e0;
+	P(nve2,k,j,i) = 0.3e0;
+	P(nve3,k,j,i) = 0.3e0;
+	P(nene,k,j,i)  = 1.0e6*exp(-( pow(x-xc,2)/sigma2x
+				     +pow(y-yc,2)/sigma2y
+	                             +pow(z-zc,2)/sigma2z )); //specific internel energy	
+	P(npre,k,j,i)  =pres;
+	P(ncsp,k,j,i) = csiso;
+	
+	P(nbm1,k,j,i) = 0.0e0;
+	P(nbm2,k,j,i) = 0.0e0;
+	P(nbm3,k,j,i) = 0.0e0;
+	P(nbps,k,j,i) = 0.0e0;
+    };
+  
+  for (int k=ks; k<=ke; ++k)
+    for (int j=js; j<=je; ++j)
+      for (int i=is; i<=ie; ++i) {
+    U(mden,k,j,i) = P(nden,k,j,i);
+    U(mrv1,k,j,i) = P(nden,k,j,i)*P(nve1,k,j,i);
+    U(mrv2,k,j,i) = P(nden,k,j,i)*P(nve2,k,j,i);
+    U(mrv3,k,j,i) = P(nden,k,j,i)*P(nve3,k,j,i);
+    double ekin = 0.5*P(nden,k,j,i)*( P(nve1,k,j,i)*P(nve1,k,j,i)
+	        		     +P(nve2,k,j,i)*P(nve2,k,j,i)
+				     +P(nve3,k,j,i)*P(nve3,k,j,i));
+    double emag = 0.5              *( P(nbm1,k,j,i)*P(nbm1,k,j,i)
+	        		     +P(nbm2,k,j,i)*P(nbm2,k,j,i)
+				     +P(nbm3,k,j,i)*P(nbm3,k,j,i));
+     U(meto,k,j,i) = P(nene,k,j,i)*P(nden,k,j,i) + ekin + emag;
+  };
+#pragma omp target update to ( U.data[0: U.size])
+#pragma omp target update to ( P.data[0: P.size])
+
+}
+
 void Output(bool& forcedamp){
   using namespace resolution_mod;
   using namespace hydflux_mod;
@@ -167,12 +230,75 @@ void Output(bool& forcedamp){
   index += 1;
 }
 
+
+void Output1D(bool& forcedamp){
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+  static int index = 0;  
+  static bool is_inited = false;
+
+  if(!forcedamp && time_sim < time_out + dtout) return;
+
+  printf("output index=%i, time=%e",index,time_sim);
+
+#pragma omp target update from (P.data[0:P.size])
+  int ic,jc,kc;
+
+  ic = int((is+ie)/2);
+  jc = int((js+je)/2);
+  kc = int((ks+ke)/2);
+  
+  if (! is_inited){
+    (void)system("mkdir -p snap");
+    is_inited = true;
+  }
+  // for x
+  char fname[256];
+  std::snprintf(fname, sizeof(fname), "snap/snx%05d.dat", index);
+  FILE* fp = std::fopen(fname, "w");
+  if (!fp){
+    std::fprintf(stderr, "open failed: %s : %s\n", fname, std::strerror(errno));
+  }
+  for (int i=is-2;i<=ie+2;i++){
+    std::fprintf(fp, "%e %e %e \n", xmin+(i-is+0.5)*dx,P(nden,kc,jc,i),P(nene,kc,jc,i) );
+  }
+  std::fclose(fp);
+  
+  // for y
+  std::snprintf(fname, sizeof(fname), "snap/sny%05d.dat", index);
+  fp = std::fopen(fname, "w");
+  if (!fp){
+    std::fprintf(stderr, "open failed: %s : %s\n", fname, std::strerror(errno));
+  }
+  for (int j=js-2;j<=je+2;j++){
+    std::fprintf(fp, "%e %e %e \n", ymin+(j-js+0.5)*dy,P(nden,kc,j,ic),P(nene,kc,j,ic) );
+  }
+  std::fclose(fp);
+
+  // for z
+  std::snprintf(fname, sizeof(fname), "snap/snz%05d.dat", index);
+  fp = std::fopen(fname, "w");
+  if (!fp){
+    std::fprintf(stderr, "open failed: %s : %s\n", fname, std::strerror(errno));
+  }
+  for (int k=ks-2;k<=ke+2;k++){
+    std::fprintf(fp, "%e %e %e \n", zmin+(k-ks+0.5)*dz,P(nden,k,jc,ic),P(nene,k,jc,ic) );
+  }
+  std::fclose(fp);
+
+
+
+  
+  index += 1;
+}
+
+
 int main() {
   
   using namespace resolution_mod;
   using namespace hydflux_mod;
   using namespace boundary_mod;
-  const bool NoOutput = false;
+  const bool NoOutput = true;
   static bool is_final = false;
   printf("setup grids and fields\n");
   
@@ -183,9 +309,10 @@ int main() {
   printf("grid size for x y z = %i %i %i\n",nx,ny,nz);
   
   GenerateProblem(P,U);
+  //GenerateProblem2(P,U);
   printf("entering main loop\n");
   int step = 0;
-  auto time_begin = std::chrono::high_resolution_clock::now();
+  auto time_beg = std::chrono::high_resolution_clock::now();
 
   for (step=0;step<stepmax;step++){
 
@@ -204,6 +331,7 @@ int main() {
     time_sim += dt;
     //printf("dt=%e\n",dt);
     if (! NoOutput) Output(is_final);
+    //if (! NoOutput) Output1D(is_final);
 
     if(time_sim > time_max) break;
     
@@ -213,13 +341,14 @@ int main() {
   //DeallocateBoundaryVariables(Xs,Xe,Ys,Ye,Zs,Ze);
   
   auto time_end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed = time_end - time_begin;
+  std::chrono::duration<double> elapsed = time_end - time_beg;
   printf("exiting main loop time=%e, step=%i\n",time_sim,step);
   printf("sim time [s]: %e\n", elapsed.count());
   printf("time/count/cell : %e\n", elapsed.count()/(nx*ny*nz)/stepmax);
 
   is_final = true;
   Output(is_final);
+  //Output1D(is_final);
   
   printf("program has been finished\n");
   return 0;

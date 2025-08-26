@@ -60,6 +60,7 @@ void DeallocateBoundaryVariables(Array4D<double>& Xs,Array4D<double>& Xe
   using namespace hydflux_mod;
 
 
+#pragma omp target exit data map (delete: Xs.data[0: Xs.size], Xs.n1, Xs.n2, Xs.n3, Xs.nv)
 #pragma omp target exit data map (delete: Xe.data[0: Xe.size], Xe.n1, Xe.n2, Xe.n3, Xe.nv)
 #pragma omp target exit data map (delete: Ys.data[0: Ys.size], Ys.n1, Ys.n2, Ys.n3, Ys.nv)
 #pragma omp target exit data map (delete: Ye.data[0: Ye.size], Ye.n1, Ye.n2, Ye.n3, Ye.nv)

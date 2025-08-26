@@ -75,7 +75,7 @@ void DeallocateHydroVariables(Array4D<double>& U,Array4D<double>& Fx,Array4D<dou
 
 }
 
-
+#pragma omp declare target
 void vanLeer(const double& dsvp,const double& dsvm,double& dsv){
     if(dsvp * dsvm > 0.0e0){
       dsv = 2.0e0*dsvp *dsvm/(dsvp + dsvm);
@@ -83,7 +83,8 @@ void vanLeer(const double& dsvp,const double& dsvm,double& dsv){
       dsv = 0.0e0;
     }
 }
-
+#pragma omp end declare target
+#pragma omp declare target
 void HLLD(const double (&leftst)[2*mconsv+madd],const double (&rigtst)[2*mconsv+madd],double (&nflux)[mconsv]){
 
 //=====================================================================
@@ -379,6 +380,7 @@ void HLLD(const double (&leftst)[2*mconsv+madd],const double (&rigtst)[2*mconsv+
            nflux[mbmw] = (fbzl+(bzlst-bzl)*msl+(bzldst-bzlst)*mslst)*maxs1
                         +(fbzr+(bzrst-bzr)*msr+(bzrdst-bzrst)*msrst)*mins1;
 }
+#pragma omp end declare target
 
 void GetNumericalFlux1(const Array4D<double>& P,Array4D<double>& Fx){
 
