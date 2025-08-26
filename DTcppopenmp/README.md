@@ -23,4 +23,4 @@ Let's run the code.
     
     sbatch sj_g00.sh
     
-The simulation data is saved in `snap/`.
+The simulation data is saved in `bindata/`.
