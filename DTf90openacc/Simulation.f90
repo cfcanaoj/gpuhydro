@@ -4,20 +4,22 @@
       integer,parameter::nhymax=3000
       real(8)::time,dt
       data time / 0.0d0 /
-      real(8),parameter:: timemax=5.0d0
-      real(8),parameter:: dtout=5.0d0/600
+      real(8),parameter:: timemax=3.0d0
+      real(8),parameter:: dtout=timemax/100
 
-      integer,parameter::ngrid=256
+      integer,parameter::ngrid1=128
+      integer,parameter::ngrid2=128
+      integer,parameter::ngrid3=128
       integer,parameter::mgn=2
-      integer,parameter::in=ngrid+2*mgn+1 &
-     &                  ,jn=ngrid+2*mgn+1 &
-     &                  ,kn=ngrid+2*mgn+1
+      integer,parameter::in=ngrid1+2*mgn+1 &
+     &                  ,jn=ngrid2+2*mgn+1 &
+     &                  ,kn=ngrid3+2*mgn+1
       integer,parameter::is=mgn+1 &
      &                  ,js=mgn+1 &
      &                  ,ks=mgn+1
-      integer,parameter::ie=ngrid+mgn &
-     &                  ,je=ngrid+mgn &
-     &                  ,ke=ngrid+mgn
+      integer,parameter::ie=ngrid1+mgn &
+     &                  ,je=ngrid2+mgn &
+     &                  ,ke=ngrid3+mgn
 
       real(8),parameter:: x1min=-0.5d0,x1max=0.5d0
       real(8),parameter:: x2min=-0.5d0,x2max=0.5d0
@@ -30,7 +32,7 @@
       real(8),dimension(in,jn,kn)::p,ei,v1,v2,v3,cs
       real(8),dimension(in,jn,kn)::b1,b2,b3,bp
 
-!$acc declare create(ngrid,mgn)
+!$acc declare create(ngrid1,ngrid2,ngrid3,mgn)
 !$acc declare create(in,jn,kn)
 !$acc declare create(is,js,ks)
 !$acc declare create(ie,je,ke)
@@ -86,23 +88,25 @@
       use omp_lib
       use basicmod
       implicit none
-      real(8)::time_begin,time_end
-      logical::is_final
+      real(8)::time_beg,time_end
+      data time_beg / 0.0d0 /
+      data time_end / 0.0d0 /
+      
+      logical:: is_final
       logical,parameter::nooutput=.true.
-      data is_final /.false./
+      data is_final / .false. /
 
       print *, "setup grids and fields"
-      print *, "grid size for x y z",ngrid,ngrid,ngrid
+      print *, "grid size for x y z",ngrid1,ngrid2,ngrid3
       call GenerateGrid
       call GenerateProblem
       call ConsvVariable
       print *, "entering main loop"
 ! main loop
-      if(.not. nooutput )                        print *,"step","time","dt"
-      time_begin = omp_get_wtime()
-      mloop: do nhy=1,nhymax
-         call TimestepControl
-         if(mod(nhy,300) .eq. 0  .and. .not. nooutput ) print *,nhy,time,dt
+      time_beg = omp_get_wtime()
+      mloop: do nhy=0,nhymax
+         call ControlTimestep
+         if(mod(nhy,300) .eq. 0  .and. .not. nooutput ) print *,"step=",nhy,"time=",time,"dt=",dt
          call BoundaryCondition
          call StateVevtor
          call EvaulateCh
@@ -114,16 +118,19 @@
          call PrimVariable
          time=time+dt
          if(.not. nooutput ) call Output(is_final)
+         !if(.not. nooutput ) call Output1D(is_final)
          if(time > timemax) exit mloop
       enddo mloop
 
       time_end = omp_get_wtime()
       
-      print *, "sim time [s]:", time_end-time_begin
-      print *, "time/count/cell", (time_end-time_begin)/(ngrid**3)/nhymax
+      print *, "exiting main loop time=",time," step=",nhy
+      print *, "sim time [s]:", time_end-time_beg
+      print *, "time/count/cell", (time_end-time_beg)/(ngrid1*ngrid2*ngrid3)/nhymax
       
       is_final = .true.
       call Output(is_final)
+      !call Output1D(is_final)
 
       print *, "program has been finished"
       end program main
@@ -134,7 +141,7 @@
       real(8)::dx,dy,dz
       integer::i,j,k
 ! x coordinates
-      dx=(x1max-x1min)/dble(ngrid)
+      dx=(x1max-x1min)/dble(ngrid1)
       do i=1,in
          x1a(i) = dx*(i-(mgn+1))+x1min
       enddo
@@ -143,7 +150,7 @@
       enddo
  
 ! y coordinates
-      dy=(x2max-x2min)/dble(ngrid)
+      dy=(x2max-x2min)/dble(ngrid2)
       do j=1,jn
          x2a(j) = dy*(j-(mgn+1))+x2min
       enddo
@@ -152,7 +159,7 @@
          x2b(j) = 0.5d0*(x2a(j+1)+x2a(j))
       enddo
 
-      dz=(x3max-x3min)/ngrid
+      dz=(x3max-x3min)/ngrid3
       do k=1,kn
          x3a(k) = dz*(k-(mgn+1))+x3min
       enddo
@@ -261,7 +268,62 @@
 !$acc update device (b1,b2,b3,bp)
       
       return
-      end subroutine GenerateProblem
+    end subroutine GenerateProblem
+
+    subroutine GenerateProblem2
+      use basicmod
+      use eosmod
+      implicit none
+      integer::i,j,k
+      real(8):: xc,yc,zc
+      real(8):: sigma2x,sigma2y,sigma2z
+
+      real(8),parameter:: ekin = 2.0d0
+      real(8),parameter:: emag = 2.0d0
+      real(8),parameter:: eint = 1.0d0
+      real(8),parameter:: denc = 1.0d0
+      real(8):: pres
+      
+      csiso= sqrt(eint/denc)     
+!$acc update device (csiso)
+      pres = denc *csiso**2
+      
+      xc = 0.5*(x1max + x1min)
+      yc = 0.5*(x2max + x2min)
+      zc = 0.5*(x3max + x3min)
+      sigma2x = (0.1d0*(x1max-x1min))**2
+      sigma2y = (0.1d0*(x2max-x2min))**2
+      sigma2z = (0.1d0*(x3max-x3min))**2
+      do k=ks,ke
+      do j=js,je
+      do i=is,ie
+          d(i,j,k) = denc
+         v1(i,j,k) = 0.3d0
+         v2(i,j,k) = 0.3d0
+         v3(i,j,k) = 0.3d0
+         b1(i,j,k) = 0.0d0
+         b2(i,j,k) = 0.0d0
+         b3(i,j,k) = 0.0d0
+          p(i,j,k) = pres
+         ei(i,j,k) = 1.0d6 * exp(-( (x1b(i)-xc)**2/sigma2x &
+     &                             +(x2b(j)-yc)**2/sigma2y &
+     &                             +(x3b(k)-zc)**2/sigma2z ))
+         cs(i,j,k) = csiso
+         bp(i,j,k) = 0.0d0
+      enddo
+      enddo
+      enddo
+      
+      print *,"initial profile is set"
+      call BoundaryCondition
+
+!$acc update device (d,v1,v2,v3)
+!$acc update device (p,ei,cs)
+!$acc update device (b1,b2,b3,bp)
+      
+      return
+      end subroutine GenerateProblem2
+    
 
       subroutine BoundaryCondition
       use basicmod
@@ -404,6 +466,7 @@
       use eosmod  
       implicit none
       integer::i,j,k
+      
 !$acc kernels      
 !$acc loop collapse(3) independent
       do k=ks,ke
@@ -436,7 +499,7 @@
       return
       end subroutine PrimVariable
 
-      subroutine TimestepControl
+      subroutine ControlTimestep
       use basicmod
       implicit none
       real(8)::dtl1
@@ -446,6 +509,7 @@
       real(8)::dtmin
       real(8)::ctot
       integer::i,j,k
+      integer::ip,jp,kp
 !$acc kernels    
       dtmin=1.0d90
 !$acc loop collapse(3) reduction(min:dtmin)  
@@ -465,13 +529,11 @@
       enddo
       enddo
       enddo
-
       dt = 0.05d0 * dtmin
 !$acc end kernels
 !$acc update host (dt)
-
       return
-      end subroutine TimestepControl
+      end subroutine ControlTimestep
 
       subroutine StateVevtor
       use basicmod
@@ -479,7 +541,7 @@
       use eosmod
       implicit none
       integer::i,j,k
-
+      !print *,"state v1",v1(is,js,ks)
 !$acc kernels
 !$acc loop collapse(3) independent
       do k=1,kn-1
@@ -494,7 +556,7 @@
          svc(nbm3,i,j,k) = b3(i,j,k)
          svc(nbps,i,j,k) = bp(i,j,k)
 
-         svc(nene,i,j,k) = csiso**2
+         svc(nene,i,j,k) = ei(i,j,k)
          svc(npre,i,j,k) = d(i,j,k)*csiso**2
          svc(ncsp,i,j,k) = csiso
          p(i,j,k) = svc(npre,i,j,k)  ! for output boundary  
@@ -503,7 +565,6 @@
       enddo
       enddo
 !$acc end kernels
-
       return
       end subroutine StateVevtor
 
@@ -540,7 +601,7 @@
          endif
 
       enddo
-
+      
       return
       end subroutine vanLeer
 
@@ -567,8 +628,6 @@
       use basicmod, only: is,ie,in,js,je,jn,ks,ke,kn
       use fluxmod
       implicit none
-! | Pleftc1   | Pleftc2 | Prigtc1   | Prigtc2   |        
-!                     You are here                    
       integer::i,j,k
       real(8),dimension(nhyd):: dsvp,dsvm,dsvc,dsv
       real(8),dimension(nhyd):: Pleftc1, Pleftc2, Plefte
@@ -587,11 +646,13 @@
          Prigtc1(:) = svc(:,i  ,j,k)
          Prigtc2(:) = svc(:,i+1,j,k)
          
+! | Pleftc1   | Pleftc2 =>| Prigtc1   | Prigtc2   |        
+!                     You are here               
 !====================
 ! Left
 !====================
          dsvp(:) = Prigtc1(:) - Pleftc2(:) 
-         dsvm(:) = Pleftc2(:) - Pleftc1(:)
+         dsvm(:) =              Pleftc2(:) - Pleftc1(:)
          call vanLeer(dsvp,dsvm,dsv)
          !         call minmod(dsvp,dsvm,dsv)
          Plefte(:) = Pleftc2(:) + 0.5d0*dsv(:)
@@ -624,14 +685,14 @@
 
          leftco(mfdn)=Plefte(nden)             *Plefte(nve1)
          leftco(mfvu)=Plefte(nden)*Plefte(nve1)*Plefte(nve1) &
-     &                                     +ptl-Plefte(nbm1)**2
+     &                        +ptl-Plefte(nbm1)*Plefte(nbm1)
          leftco(mfvv)=Plefte(nden)*Plefte(nve2)*Plefte(nve1) &
      &                            -Plefte(nbm2)*Plefte(nbm1)
          leftco(mfvw)=Plefte(nden)*Plefte(nve3)*Plefte(nve1) &
      &                            -Plefte(nbm3)*Plefte(nbm1)
          leftco(mfet)= (etot +ptl   )*Plefte(nve1) &
-     &                -( Plefte(nbm1)*Plefte(nve1)     &
-     &                  +Plefte(nbm2)*Plefte(nve2)     &
+     &                -( Plefte(nbm1)*Plefte(nve1) &
+     &                  +Plefte(nbm2)*Plefte(nve2) &
      &                  +Plefte(nbm3)*Plefte(nve3))*Plefte(nbm1)
 
          leftco(mfbu) =  0.0d0
@@ -653,11 +714,14 @@
      &                            )/2.0d0)
          leftco(mvel)= Plefte(nve1)
          leftco(mpre)= ptl
+
+! | Pleftc1   | Pleftc2 |<= Prigtc1   | Prigtc2   |        
+!                     You are here               
 !====================
 ! Right
 !====================
          dsvp = Prigtc2(:) - Prigtc1(:) 
-         dsvm = Prigtc1(:) - Pleftc2(:)
+         dsvm =              Prigtc1(:) - Pleftc2(:)
          call vanLeer(dsvp,dsvm,dsv)
          !         call minmod(dsvp,dsvm,dsv)
          Prigte(:) = Prigtc1(:) - 0.5d0*dsv(:)
@@ -681,7 +745,7 @@
          rigtco(mubv)=Prigte(nbm2)  ! b_y
          rigtco(mubw)=Prigte(nbm3)  ! b_z
          rigtco(mubp)=Prigte(nbps)  ! psi
-
+ 
 ! Flux
          ptl = Prigte(npre) + ( Prigte(nbm1)**2        &
      &                         +Prigte(nbm2)**2        &
@@ -767,9 +831,10 @@
       do j=js,je+1
          Pleftc1(:) = svc(:,i,j-2,k)
          Pleftc2(:) = svc(:,i,j-1,k)
-         Prigtc1(:) = svc(:,i,j,k)
-         Prigtc2(:) = svc(:,i,j+1,k)
-
+         Prigtc1(:) = svc(:,i,j  ,k)
+         Prigtc2(:) = svc(:,i,j+1,k)     
+! | Pleftc1   | Pleftc2 |<= Prigtc1   | Prigtc2   |        
+!                     You are here   
 !====================
 ! Left
 !====================
@@ -834,7 +899,9 @@
      &                            )/2.0d0)
          leftco(mvel)= Plefte(nve2)
          leftco(mpre)= ptl
-
+     
+! | Pleftc1   | Pleftc2 =>| Prigtc1   | Prigtc2   |        
+!                     You are here  
 !====================
 ! Right
 !====================
@@ -947,7 +1014,9 @@
          Pleftc2(:) = svc(:,i,j,k-1)
          Prigtc1(:) = svc(:,i,j,k  )
          Prigtc2(:) = svc(:,i,j,k+1)
-                  
+                       
+! | Pleftc1   | Pleftc2 =>| Prigtc1   | Prigtc2   |        
+!                     You are here  
 !====================
 ! Left
 !====================
@@ -1012,7 +1081,9 @@
      &                            )/2.0d0)
          leftco(mvel)= Plefte(nve3)
          leftco(mpre)= ptl
-
+     
+! | Pleftc1   | Pleftc2 |<= Prigtc1   | Prigtc2   |        
+!                     You are here  
 !==============================
 ! Right 
 !==============================
@@ -1859,6 +1930,65 @@
       return
       end subroutine  DampPsi
 
+
+      subroutine Output1D(force_damp)
+      use basicmod
+      implicit none
+      integer::i,j,k
+      integer::ic,jc,kc
+      character(20),parameter::dirname="snap/"
+      character(40)::filename
+      integer::unitsnp
+      
+      real(8),save::tout
+      data tout / 0.0d0 /
+      integer, save::nout
+      data nout / 1 /
+      
+      logical,intent(in) :: force_damp
+      logical, save:: is_inited
+      data is_inited /.false./
+
+      if (.not. is_inited) then
+         call makedirs(dirname)
+         is_inited =.true.
+      endif
+      if(time < tout+dtout .and. .not. force_damp ) return
+!$acc update host (d,v1,v2,v3,ei,et,p,b1,b2,b3,bp)
+
+      print *, "output index=",nout,"time=",time
+      
+      ic = int((is+ie)/2)
+      jc = int((js+je)/2)
+      kc = int((ks+ke)/2)
+      
+      write(filename,'(a3,i5.5,a4)')"snx",nout,".dat"
+      filename = trim(dirname)//filename
+      open(newunit=unitsnp,file=filename,status='replace',form='formatted')
+      do i=is-mgn,ie+mgn
+         write(unitsnp,"(5(1x,(1pe12.5)))") x1b(i),d(i,jc,kc),v1(i,jc,kc),ei(i,jc,kc),et(i,jc,kc)
+      enddo
+      close(unitsnp)
+
+      write(filename,'(a3,i5.5,a4)')"sny",nout,".dat"
+      filename = trim(dirname)//filename
+      open(newunit=unitsnp,file=filename,status='replace',form='formatted')
+      do j=js-mgn,je+mgn
+         write(unitsnp,"(4(1x,(1pe12.5)))") x2b(j),d(ic,j,kc),v2(ic,j,kc),ei(ic,j,kc)
+      enddo 
+      close(unitsnp)
+      
+      write(filename,'(a3,i5.5,a4)')"snz",nout,".dat"
+      filename = trim(dirname)//filename
+      open(newunit=unitsnp,file=filename,status='replace',form='formatted')
+      do k=ks-mgn,ke+mgn
+         write(unitsnp,"(4(1x,(1pe12.5)))") x3b(k),d(ic,jc,k),v3(ic,jc,k),ei(ic,jc,k)
+      enddo
+      close(unitsnp)
+      tout = time 
+      nout = nout+1
+      end subroutine Output1D
+    
       subroutine Output
       use basicmod
       implicit none
@@ -1895,9 +2025,9 @@
 
       open(unitout,file=filename,status='replace',form='formatted')
       write(unitout,*) "# ",time,dt
-      write(unitout,*) "# ",ngrid,gs
-      write(unitout,*) "# ",ngrid,gs
-      write(unitout,*) "# ",ngrid,gs
+      write(unitout,*) "# ",ngrid1,gs
+      write(unitout,*) "# ",ngrid2,gs
+      write(unitout,*) "# ",ngrid3,gs
       close(unitout)
 
       x1out(is-gs:ie+gs,1) = x1b(is-gs:ie+gs)

@@ -16,6 +16,10 @@ foptopenacc = -Minfo=accel -acc -mcmodel=medium
 fopt = -g -traceback -O2
 #fopt = -g -traceback -check all -fpe0
 
+#fc= ifort -check all
+#foptopenacc = 
+#fopt = -g -traceback -O2
+
 ${exe}: Simulation.f90
 	${fc} ${fopt} ${foptopenacc} $< -o ${exe}
 
