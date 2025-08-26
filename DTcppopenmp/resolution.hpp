@@ -11,8 +11,8 @@ namespace resolution_mod {
   inline double time_sim = 0.0e0;
   inline double time_out = 0.0e0;
   inline double dt;
-  inline constexpr double time_max = 5.0e0;
-  inline constexpr double dtout = 5.0e0/600;
+  inline constexpr double time_max = 3.0e0;
+  inline constexpr double dtout = time_max/100;
   
   inline constexpr int nx{128}; //! resolution for x
   inline constexpr int ny{128}; //! resolution for y

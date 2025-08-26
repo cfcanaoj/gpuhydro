@@ -106,7 +106,7 @@ static void GenerateProblem2(Array4D<double>& P,Array4D<double>& U) {
   chg = 0.0e0;
 #pragma omp target update to ( csiso,chg)
 
-  double pres = denc=csiso*csiso;
+  double pres = denc*csiso*csiso;
 
   double xc = 0.5*(xmax + xmin);
   double yc = 0.5*(ymax + ymin);
@@ -177,7 +177,7 @@ void Output(bool& forcedamp){
   
   if (! is_inited){
     (void)system("mkdir -p bindata");
-    hydout.allocate(nvar,nz+2*gs,ny+2*gs,nx*2*gs);
+    hydout.allocate(nvar,nz+2*gs,ny+2*gs,nx+2*gs);
     is_inited = true;
   }
   // ---- output text (unf%05d.dat) ----
