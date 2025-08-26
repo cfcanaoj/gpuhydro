@@ -1,4 +1,4 @@
-# 3D upwind advection
+# 3D magneto-hydrodynamic deacaying turbulence
 
 ## How to copy the source code
 After you login the server, `g00.cfca.nao.ac.jp`, follow the instruction.
