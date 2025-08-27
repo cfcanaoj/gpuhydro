@@ -9,7 +9,6 @@ To foster GPU computing, we show sample codes of hydrodynamic simulations in thi
 |2D Kelvin-Helmholtz Instability|Fortran|MPI, OpenACC|[KHf90openacc_mpi](KHf90openacc_mpi)|
 |3D upwind advection|C++|OpenMP(GPU)|[ADcppopenmp](ADcppopenmp)|
 |3D upwind advection|C++|OpenACC|[ADcppopenacc](ADcppopenacc)|
-|3D magneto-hydrodynamic deacaying turbulence|Fortran|MPI, OpenMP(CPU)|[DTf90openmp_mpi](DTf90openmp_mpi)|
 |3D magneto-hydrodynamic deacaying turbulence|Fortran|OpenACC|[DTf90openacc](DTf90openacc)|
 |3D magneto-hydrodynamic deacaying turbulence|Fortran|MPI, OpenACC|[DTf90openacc_mpi](DTf90openacc_mpi)|
 |3D magneto-hydrodynamic deacaying turbulence|C++|OpenMP(GPU)|[DTcppopenmp](DTcppopenmp)|
