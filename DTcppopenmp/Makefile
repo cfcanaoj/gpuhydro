@@ -8,7 +8,7 @@ all: ${exed}/${exe}
 .PHONY: all clean
 
 #################
-# Fortran
+# C++
 #################
 
 cc := nvc++ 
@@ -17,9 +17,11 @@ copt := -std=c++17  -O3
 coptgpu := -mp=gpu -Minfo=mp,accel -gpu=cc80,mem:separate
 coptdebug := -g -traceback
 
-
-#fopt = -g -traceback -O2
-#fopt = -g -traceback -check all -fpe0
+# CPU environment for debug
+#cc := icpx
+#copt := -std=c++17  -O3 -lrt
+#coptgpu := 
+#coptdebug := -g -traceback
 
 .SUFFIXES: .cpp .o
 
