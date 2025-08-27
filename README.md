@@ -4,6 +4,7 @@ To foster GPU computing, we show sample codes of hydrodynamic simulations in thi
 |Problem|Language|parallel|Name|
 ----|----|----|----
 |2D Kelvin-Helmholtz Instability|Fortran|CPU, OpenMP|[KHf90openmp](KHf90openmp)|
+|2D Kelvin-Helmholtz Instability|Fortran|CPU, MPI, OpenMP|[KHf90openmp_mpi](KHf90openmp_mpi)|
 |2D Kelvin-Helmholtz Instability|Fortran|GPU, OpenACC|[KHf90openacc](KHf90openacc)|
 |3D upwind advection|C++|GPU, OpenMP|[ADcppopenmp](ADcppopenmp)|
 |3D upwind advection|C++|GPU, OpenACC|[ADcppopenacc](ADcppopenacc)|
