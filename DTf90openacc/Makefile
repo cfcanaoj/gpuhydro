@@ -33,4 +33,4 @@ clean:
 	rm -f ${exe} ${ana} *.o *.mod *~
 
 allclean:
-	rm -fr ${dirm} ${dirf} ${dird} ${dirf}
+	rm -fr ${dird}
