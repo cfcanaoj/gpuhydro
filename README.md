@@ -3,16 +3,16 @@ To foster GPU computing, we show sample codes of hydrodynamic simulations in thi
 
 |Problem|Language|parallel|Name|
 ----|----|----|----
-|2D Kelvin-Helmholtz Instability|Fortran|CPU, OpenMP|[KHf90openmp](KHf90openmp)|
-|2D Kelvin-Helmholtz Instability|Fortran|CPU, MPI, OpenMP|[KHf90openmp_mpi](KHf90openmp_mpi)|
-|2D Kelvin-Helmholtz Instability|Fortran|GPU, OpenACC|[KHf90openacc](KHf90openacc)|
-|2D Kelvin-Helmholtz Instability|Fortran|GPU, MPI, OpenACC|[KHf90openacc_mpi](KHf90openacc_mpi)|
-|3D upwind advection|C++|GPU, OpenMP|[ADcppopenmp](ADcppopenmp)|
-|3D upwind advection|C++|GPU, OpenACC|[ADcppopenacc](ADcppopenacc)|
-|3D magneto-hydrodynamic deacaying turbulence|Fortran|CPU, MPI, OpenMP|[DTf90openmp_mpi](DTf90openmp_mpi)|
-|3D magneto-hydrodynamic deacaying turbulence|Fortran|GPU, OpenACC|[DTf90openacc](DTf90openacc)|
-|3D magneto-hydrodynamic deacaying turbulence|Fortran|GPU, MPI, OpenACC|[DTf90openacc_mpi](DTf90openacc_mpi)|
-|3D magneto-hydrodynamic deacaying turbulence|C++|GPU, OpenMP|[DTcppopenmp](DTcppopenmp)|
+|2D Kelvin-Helmholtz Instability|Fortran|OpenMP(CPU)|[KHf90openmp](KHf90openmp)|
+|2D Kelvin-Helmholtz Instability|Fortran|MPI, OpenMP(CPU)|[KHf90openmp_mpi](KHf90openmp_mpi)|
+|2D Kelvin-Helmholtz Instability|Fortran|OpenACC|[KHf90openacc](KHf90openacc)|
+|2D Kelvin-Helmholtz Instability|Fortran|MPI, OpenACC|[KHf90openacc_mpi](KHf90openacc_mpi)|
+|3D upwind advection|C++|OpenMP(GPU)|[ADcppopenmp](ADcppopenmp)|
+|3D upwind advection|C++|OpenACC|[ADcppopenacc](ADcppopenacc)|
+|3D magneto-hydrodynamic deacaying turbulence|Fortran|MPI, OpenMP(CPU)|[DTf90openmp_mpi](DTf90openmp_mpi)|
+|3D magneto-hydrodynamic deacaying turbulence|Fortran|OpenACC|[DTf90openacc](DTf90openacc)|
+|3D magneto-hydrodynamic deacaying turbulence|Fortran|MPI, OpenACC|[DTf90openacc_mpi](DTf90openacc_mpi)|
+|3D magneto-hydrodynamic deacaying turbulence|C++|OpenMP(GPU)|[DTcppopenmp](DTcppopenmp)|
 
 
 ## Fortran with OpenACC
