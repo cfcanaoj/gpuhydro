@@ -219,7 +219,7 @@ int main() {
   
   AllocateHydroVariables(G,U,Fx,Fy,Fz,P);
  
-  AllocateBoundaryVariables(Xs,Xe,Ys,Ye,Zs,Ze);
+  AllocateBoundaryVariables(Bs,Br);
   
   if (myid_w == 0) printf("grid size for x y z = %i %i %i\n",ngrid1,ngrid2,ngrid3);
   
@@ -235,7 +235,7 @@ int main() {
     ControlTimestep(G); 
     if (step%300 ==0 && !NoOutput) printf("step=%i time=%e dt=%e\n",step,time_sim,dt);
     //printf("step=%i time=%e dt=%e\n",step,time_sim,dt);
-    SetBoundaryCondition(P,Xs,Xe,Ys,Ye,Zs,Ze);
+    SetBoundaryCondition(P,Bs,Br);
     EvaluateCh();
     GetNumericalFlux1(G,P,Fx);
     GetNumericalFlux2(G,P,Fy);

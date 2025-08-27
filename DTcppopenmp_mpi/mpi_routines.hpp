@@ -9,6 +9,10 @@
 // -----------------------------
 namespace mpiconfig_mod {
 
+ inline constexpr int mreq = 300;
+ inline MPI_Status stat[mreq];
+ inline MPI_Request req[mreq];
+  
 // ---- Public MPI state (read-mostly) ----
 extern MPI_Comm mpi_comm_hyd;   // split communicator
 extern MPI_Comm comm3d;         // 3D Cartesian communicator

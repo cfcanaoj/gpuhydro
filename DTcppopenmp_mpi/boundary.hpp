@@ -11,19 +11,14 @@
 using namespace hydro_arrays_mod;
 
 namespace boundary_mod {
-  extern Array4D<double> Xs,Xe,Ys,Ye,Zs,Ze; 
+  extern Boundary3D<double> Bs,Br; 
 };
 
-void AllocateBoundaryVariables(Array4D<double>& Xs,Array4D<double>& Xe
-			      ,Array4D<double>& Ys,Array4D<double>& Ye
-			      ,Array4D<double>& Zs,Array4D<double>& Ze);
-void DeallocateBoundaryVariables(Array4D<double>& Xs,Array4D<double>& Xe
-			      ,Array4D<double>& Ys,Array4D<double>& Ye
-			      ,Array4D<double>& Zs,Array4D<double>& Ze);
+void AllocateBoundaryVariables(Boundary3D<double>& Bs,Boundary3D<double>& Br);
+void DeallocateBoundaryVariables(Boundary3D<double>& Bs,Boundary3D<double>& Br);
 
-void SetBoundaryCondition(Array4D<double>& P
-			 ,Array4D<double>& Xs,Array4D<double>& Xe
-			 ,Array4D<double>& Ys,Array4D<double>& Ye
-			 ,Array4D<double>& Zs,Array4D<double>& Ze);
+void SetBoundaryCondition(Array4D<double>& P,Boundary3D<double>& Bs,Boundary3D<double>& Br);
+
+void SendRecvBoundary(const Boundary3D<double>& Bs,Boundary3D<double>& Br);
 
 #endif
