@@ -1,4 +1,4 @@
-# 3D upwind advection
+# 3D magneto-hydrodynamic deacaying turbulence
 
 ## How to copy the source code
 After you login the server, `g00.cfca.nao.ac.jp`, follow the instruction.
@@ -23,4 +23,4 @@ Let's run the code.
     
     sbatch sj_g00.sh
     
-The simulation data is saved in `snap/`.
+The simulation data is saved in `bindata/`.
