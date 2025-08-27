@@ -960,9 +960,9 @@ void ControlTimestep(){
   dtmin = huge;
   /*
   int ip,jp,kp;
-  ip=is;
-  jp=js;
-  kp=ks;
+  ip=0;
+  jp=0;
+  kp=0;
   */
   //printf("P:cs b1 b2 b3=%e %e %e %e\n",P(ncsp,ks,js,is),P(nbm1,ks,js,is),P(nbm2,ks,js,is),P(nbm3,ks,js,is));
 #pragma omp target teams distribute parallel for reduction(min:dtmin) collapse(3)
@@ -977,7 +977,7 @@ void ControlTimestep(){
 				    ,dy/(std::abs(P(nve2,k,j,i))+ctot)
 				    ,dz/(std::abs(P(nve3,k,j,i))+ctot)});
 	dtmin = std::min(dtminloc,dtmin);
-	/* if(dtminloc < dtmin){//for debug
+	/*  if(dtminloc < dtmin){//for debug
 	  dtmin = dtminloc;
 	  ip=i;
 	  jp=j;
@@ -989,7 +989,8 @@ void ControlTimestep(){
   //printf("dt=%e\n",dtmin);
   //std::abort();
 #pragma omp target update from (dt)
-  //  printf("P:(v1 v2 v3),(b1 b2 b3)=(%e %e %e),(%e %e %e)\n",P(nve1,kp,jp,ip),P(nve2,kp,jp,ip),P(nve3,kp,jp,ip),P(nbm1,kp,jp,ip),P(nbm2,kp,jp,ip),P(nbm3,kp,jp,ip));
+  //  printf("pos %i %i %i",ip,jp,kp);
+  //printf("P: cs (v1 v2 v3),(b1 b2 b3)=%e (%e %e %e),(%e %e %e)\n",P(ncsp,kp,jp,ip),P(nve1,kp,jp,ip),P(nve2,kp,jp,ip),P(nve3,kp,jp,ip),P(nbm1,kp,jp,ip),P(nbm2,kp,jp,ip),P(nbm3,kp,jp,ip));
 }
 
 void EvaluateCh(){
