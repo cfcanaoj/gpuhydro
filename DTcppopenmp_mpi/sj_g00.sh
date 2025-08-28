@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-#SBATCH --partition=ga80-1gpu
-#SBATCH --gres=gpu:1
+#SBATCH --partition=dgx-full
+#SBATCH --nodes=1
+#SBATCH --gpu-bind=closest
+#SBATCH --ntasks=2
+#SBATCH --gres=gpu:2
 #SBATCH --time=00:05:00
 #SBATCH -o ./out%j.log
 #SBATCH -e ./err%j.log
@@ -13,4 +16,4 @@ module load nvhpc/25.7
 #export LIBOMPTARGET_INFO=4
 
 cd ${SLURM_SUBMIT_DIR}
-./main.x
+mpiexec -n 2 ./main.x

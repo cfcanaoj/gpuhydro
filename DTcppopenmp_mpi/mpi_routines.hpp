@@ -21,9 +21,11 @@ extern int ierr;
 extern int myid_w, nprocs_w;    // WORLD rank/size
 extern int myid,   nprocs;      // comm3d rank/size
 
-extern int periodic[3];         // periodicity flags (0/1)
-extern int ntiles[3];           // process grid dims (x,y,z)
-extern int coords[3];           // my coords in the grid (x,y,z)
+  inline constexpr int ndim = 3;
+  inline constexpr int dir1=0,dir2=1,dir3=2;
+extern int periodic[ndim];         // periodicity flags (0/1)
+extern int ntiles[ndim];           // process grid dims (x,y,z)
+extern int coords[ndim];           // my coords in the grid (x,y,z)
 extern int reorder;             // MPI_Cart_create reorder flag
 
 // neighbor ranks (prev/next) along each dimension

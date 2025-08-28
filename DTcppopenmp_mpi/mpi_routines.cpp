@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <openacc.h>
+#include <omp.h>
 
 #include "mpi_routines.hpp"
 
@@ -23,10 +23,8 @@ namespace mpiconfig_mod {
   MPI_Comm comm3d = MPI_COMM_NULL;
   int myid = 0, nprocs = 0;
   
-  const int ndim = 3;
-  const int dir1=0,dir2=1,dir3=2;
   int periodic[ndim] = {1, 1, 1};   // broadcasted as MPI_INT
-  int ntiles[ndim]   = {1, 2, 2};
+  int ntiles[ndim]   = {1, 2, 1};
   int coords[ndim]   = {0, 0, 0};
   int reorder     = 0;
   int n1m=-1, n1p=-1, n2m=-1, n2p=-1, n3m=-1, n3p=-1;
@@ -68,13 +66,15 @@ void InitializeMPI() {
   MPI_Cart_shift(comm3d, dir2, 1, &n2m, &n2p);
   MPI_Cart_shift(comm3d, dir3, 1, &n3m, &n3p);
   MPI_Cart_coords(comm3d, myid, 3,coords);
+
   
-  // Select GPU device (OpenACC)
-  ngpus = acc_get_num_devices(acc_device_nvidia);
+  // Select GPU device (OpenMP)
+  ngpus = omp_get_num_devices();
   if (myid_w == 0) std::printf("num of GPUs = %d\n", ngpus);
   gpuid = (ngpus > 0) ? (myid_w % ngpus) : -1;
-  if (gpuid >= 0) acc_set_device_num(gpuid, acc_device_nvidia);
-  
+  if (gpuid >= 0) omp_set_default_device(gpuid);
+
+  printf("init myid_w,gpuid=(%i,%i)\n",myid_w,gpuid);  
     // If device-side use of myid_w is needed later, this updates it once.
 #pragma acc update device(myid_w)
 }
