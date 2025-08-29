@@ -322,24 +322,31 @@ void Output(bool& forcedamp){
     
     io::nvars = 9;
     io::nvarg = 2;
+    int ngrid1mod = ngrid1;
+    int ngrid2mod = ngrid2;
+    int ngrid3mod = ngrid3;
+    // for grid, we include the edge
+    if(coords[dir1] == ntiles[dir1] -1) ngrid1mod += 1;
+    if(coords[dir2] == ntiles[dir2] -1) ngrid2mod += 1;
+    if(coords[dir3] == ntiles[dir3] -1) ngrid3mod += 1;
     
-    io::gridXout.allocate(io::nvarg,ngrid1+1);
-    io::gridYout.allocate(io::nvarg,ngrid2+1);
-    io::gridZout.allocate(io::nvarg,ngrid3+1);
+    io::gridXout.allocate(io::nvarg,ngrid1mod);
+    io::gridYout.allocate(io::nvarg,ngrid2mod);
+    io::gridZout.allocate(io::nvarg,ngrid3mod);
     io::Fieldout.allocate(io::nvars,ngrid3,ngrid2,ngrid1);
 
-    for(int i=is;i<=ie+1;i++){
-      io::gridXout(0,i-is) = G.x1b(i);
-      io::gridXout(1,i-is) = G.x1a(i);
+    for(int i=0;i<=ngrid1mod;i++){
+      io::gridXout(0,i) = G.x1b(is+i);
+      io::gridXout(1,i) = G.x1a(is+i);
     }
     
-    for(int j=js;j<=je+1;j++){
-      io::gridYout(0,j-js) = G.x2b(j);
-      io::gridYout(1,j-js) = G.x2a(j);
+    for(int j=0;j<=ngrid2mod;j++){
+      io::gridYout(0,j) = G.x2b(js+j);
+      io::gridYout(1,j) = G.x2a(js+j);
     }
-    for(int k=ks;k<=ke+1;k++){
-      io::gridZout(0,k-ks) = G.x3b(k);
-      io::gridZout(1,k-ks) = G.x3a(k);
+    for(int k=0;k<=ngrid3mod;k++){
+      io::gridZout(0,k) = G.x3b(ks+k);
+      io::gridZout(1,k) = G.x3a(ks+k);
     }
     
     is_inited = true;
@@ -377,10 +384,6 @@ void Output(bool& forcedamp){
   io::MPIOutputBindary(index);
   index += 1;
 }
-
-
-
-
 
 
 int main() {
@@ -430,8 +433,8 @@ int main() {
 
     time_sim += dt;
     //printf("dt=%e\n",dt);
-    //if (! NoOutput) Output(is_final);
-    if (! NoOutput) Output1D(is_final);
+    if (! NoOutput) Output(is_final);
+    //if (! NoOutput) Output1D(is_final);
 
     if(time_sim > time_max) break;
     
@@ -447,8 +450,8 @@ int main() {
   if (myid_w == 0) printf("time/count/cell : %e\n", elapsed.count()/(ngrid1*ngrid2*ngrid3)/stepmax);
 
   is_final = true;
-  //Output(is_final);
-  Output1D(is_final);
+  Output(is_final);
+  //Output1D(is_final);
   
   printf("program has been finished\n");
   return 0;
