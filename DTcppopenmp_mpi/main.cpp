@@ -350,7 +350,8 @@ void Output(bool& forcedamp){
     }
     
     is_inited = true;
-  }
+  };
+  
   // ---- output text (unf%05d.dat) ----
   char fname_unf[256];
   std::snprintf(fname_unf, sizeof(fname_unf), "bindata/unf%05d.dat", index);
@@ -367,20 +368,19 @@ void Output(bool& forcedamp){
   
   // ---- output data (bin%05d.dat) ----
 
-  for (int k=ks;k<=ke;k++)
-    for (int j=js;j<=je;j++)
-      for (int i=is;i<=ie;i++){
-	io::Fieldout(0,k-ks,j-js,i-is) = P(nden,k,j,i);
-	io::Fieldout(1,k-ks,j-js,i-is) = P(nve1,k,j,i);
-	io::Fieldout(2,k-ks,j-js,i-is) = P(nve2,k,j,i);
-	io::Fieldout(3,k-ks,j-js,i-is) = P(nve3,k,j,i);
-	io::Fieldout(4,k-ks,j-js,i-is) = P(nbm1,k,j,i);
-	io::Fieldout(5,k-ks,j-js,i-is) = P(nbm2,k,j,i);
-	io::Fieldout(6,k-ks,j-js,i-is) = P(nbm3,k,j,i);
-	io::Fieldout(7,k-ks,j-js,i-is) = P(nbps,k,j,i);
-	io::Fieldout(8,k-ks,j-js,i-is) = P(npre,k,j,i); 
+  for (int k=0;k<=ngrid3;k++)
+    for (int j=0;j<=ngrid2;j++)
+      for (int i=0;i<=ngrid1;i++){
+	io::Fieldout(0,k,j,i) = P(nden,k+ks,j+js,i+is);
+	io::Fieldout(1,k,j,i) = P(nve1,k+ks,j+js,i+is);
+	io::Fieldout(2,k,j,i) = P(nve2,k+ks,j+js,i+is);
+	io::Fieldout(3,k,j,i) = P(nve3,k+ks,j+js,i+is);
+	io::Fieldout(4,k,j,i) = P(nbm1,k+ks,j+js,i+is);
+	io::Fieldout(5,k,j,i) = P(nbm2,k+ks,j+js,i+is);
+	io::Fieldout(6,k,j,i) = P(nbm3,k+ks,j+js,i+is);
+	io::Fieldout(7,k,j,i) = P(nbps,k+ks,j+js,i+is);
+	io::Fieldout(8,k,j,i) = P(npre,k+ks,j+js,i+is); 
   }
-  
   io::MPIOutputBindary(index);
   index += 1;
 }
@@ -450,7 +450,7 @@ int main() {
   if (myid_w == 0) printf("time/count/cell : %e\n", elapsed.count()/(ngrid1*ngrid2*ngrid3)/stepmax);
 
   is_final = true;
-  Output(is_final);
+  //Output(is_final);
   //Output1D(is_final);
   
   printf("program has been finished\n");

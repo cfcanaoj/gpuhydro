@@ -25,8 +25,8 @@ namespace mpi_dataio_mod {
   
   static bool is_inited = false;
 
-  char* id;
-  char* datadir;
+  char id[10];
+  char datadir[10];
 
 // ---- MPI-IO 書き出し本体（Fortran: MPIOutputBindary）----
   void MPIOutputBindary(int timeid) {

@@ -54,8 +54,8 @@ namespace mpi_dataio_mod {
     }
   };
 
-  extern char* id;
-  extern char* datadir;
+  extern char id[10];
+  extern char datadir[10];
   
   extern int ntotal[mpi::ndim];
   extern int npart[mpi::ndim];
