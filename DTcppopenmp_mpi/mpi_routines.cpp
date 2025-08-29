@@ -79,4 +79,20 @@ void InitializeMPI() {
 #pragma acc update device(myid_w)
 }
 
+void MPIminfind(const double& vin,const int& locin, double& vout, int& locout){
+  struct Pair { double v; int loc; } in_, out_;
+  in_.v   =   vin;
+  in_.loc = locin;
+  MPI_Allreduce(&in_,& out_, 1, MPI_DOUBLE_INT, MPI_MINLOC, comm3d);
+    vout  = out_.v;
+  locout  = out_.loc;
+}
 
+void MPImaxfind(const double& vin,const int& locin, double& vout, int& locout) {
+  struct Pair { double v; int loc; } in_, out_;
+  in_.v   =   vin;
+  in_.loc = locin;
+  MPI_Allreduce(&in_,&out_, 1, MPI_DOUBLE_INT, MPI_MAXLOC, comm3d);
+    vout  = out_.v;
+  locout  = out_.loc;
+}

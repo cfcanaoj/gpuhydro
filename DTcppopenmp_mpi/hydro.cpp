@@ -14,6 +14,8 @@
 #include "resolution.hpp"
 #include "hydro.hpp"
 
+#include "mpi_routines.hpp"
+
 using namespace hydro_arrays_mod;
 using namespace resolution_mod;
 
@@ -64,14 +66,14 @@ void AllocateHydroVariables(Grid3D<double>& G,Array4D<double>& U,Array4D<double>
 #pragma omp target enter data map (alloc: G.x1a_data[0:G.n1],G.x1b_data[0:G.n1])
 #pragma omp target enter data map (alloc: G.x2a_data[0:G.n2],G.x2b_data[0:G.n2])
 #pragma omp target enter data map (alloc: G.x3a_data[0:G.n3],G.x3b_data[0:G.n3])
-
+  /*
   assoc(G.x1a_data, sizeof(double)*G.n1,dev);
   assoc(G.x1b_data, sizeof(double)*G.n1,dev);
   assoc(G.x2a_data, sizeof(double)*G.n2,dev);
   assoc(G.x2b_data, sizeof(double)*G.n2,dev);
   assoc(G.x3a_data, sizeof(double)*G.n3,dev);
   assoc(G.x3b_data, sizeof(double)*G.n3,dev);
-  
+  */
   U.allocate(mconsv,ktot,jtot,itot);
   P.allocate(nprim ,ktot,jtot,itot);
       
@@ -84,13 +86,13 @@ void AllocateHydroVariables(Grid3D<double>& G,Array4D<double>& U,Array4D<double>
 #pragma omp target enter data map (alloc:Fy.data[0:Fy.size])
 #pragma omp target enter data map (alloc:Fz.data[0:Fz.size])
 #pragma omp target enter data map (alloc: P.data[0: P.size])
-
+  /*
   assoc( U.data, sizeof(double)* U.size,dev);
   assoc(Fx.data, sizeof(double)*Fx.size,dev);
   assoc(Fy.data, sizeof(double)*Fy.size,dev);
   assoc(Fz.data, sizeof(double)*Fz.size,dev);
   assoc( P.data, sizeof(double)* P.size,dev);
-  
+  */
   for (int m=0; m<mconsv; m++)
     for (int k=0; k<ktot; k++)
       for (int j=0; j<jtot; j++)
@@ -1007,17 +1009,10 @@ void UpdatePrimitvP(const Array4D<double>& U,Array4D<double>& P){
 }
 
 void ControlTimestep(const Grid3D<double>& G){
-  double dtmin;
+  using namespace mpiconfig_mod;
   const double huge = 1.0e90;
-  dtmin = huge;
-  /*
-  int ip,jp,kp;
-  ip=0;
-  jp=0;
-  kp=0;
-  */
-  //printf("P:cs b1 b2 b3=%e %e %e %e\n",P(ncsp,ks,js,is),P(nbm1,ks,js,is),P(nbm2,ks,js,is),P(nbm3,ks,js,is));
-#pragma omp target teams distribute parallel for reduction(min:dtmin) collapse(3)
+  double dtminl = huge;
+#pragma omp target teams distribute parallel for reduction(min:dtminl) collapse(3)
   for (int k=ks; k<=ke; k++)
     for (int j=js; j<=je; j++)
       for (int i=is; i<=ie; i++) {
@@ -1028,7 +1023,7 @@ void ControlTimestep(const Grid3D<double>& G){
 	double dtminloc = std::min({ (G.x1a(i+1)-G.x1a(i))/(std::abs(P(nve1,k,j,i))+ctot)
 				    ,(G.x2a(j+1)-G.x2a(j))/(std::abs(P(nve2,k,j,i))+ctot)
 				    ,(G.x3a(k+1)-G.x3a(k))/(std::abs(P(nve3,k,j,i))+ctot)});
-	dtmin = std::min(dtminloc,dtmin);
+	dtminl = std::min(dtminloc,dtminl);
 	/*  if(dtminloc < dtmin){//for debug
 	  dtmin = dtminloc;
 	  ip=i;
@@ -1037,16 +1032,16 @@ void ControlTimestep(const Grid3D<double>& G){
 	  }*/
 	
       }
-  dt = 0.05e0*dtmin;
-  //printf("dt=%e\n",dtmin);
-  //std::abort();
-#pragma omp target update from (dt)
-  //  printf("pos %i %i %i",ip,jp,kp);
-  //printf("P: cs (v1 v2 v3),(b1 b2 b3)=%e (%e %e %e),(%e %e %e)\n",P(ncsp,kp,jp,ip),P(nve1,kp,jp,ip),P(nve2,kp,jp,ip),P(nve3,kp,jp,ip),P(nbm1,kp,jp,ip),P(nbm2,kp,jp,ip),P(nbm3,kp,jp,ip));
+  //  Here dtminl is in host
+  double dtming;
+  int myid_wg;
+  MPIminfind(dtminl,myid_w,dtming,myid_wg);
+  dt = 0.05e0*dtming;
+#pragma omp target update to (dt)
 }
 
 void EvaluateCh(){
-  
+  using namespace mpiconfig_mod;
   double chgloc = 0.0e0;
 #pragma omp target teams distribute parallel for collapse(3) reduction(max:chgloc)
   for (int k=ks; k<=ke; k++)
@@ -1066,8 +1061,14 @@ void EvaluateCh(){
 
         chgloc = std::max({chgloc,ch1,ch2,ch3});
       }
-  chg = chgloc;
+  // Here chgg is in host
+  double chgg;
+  int  myid_wg;
+  MPImaxfind(chgloc,myid_w,chgg,myid_wg);
+  chg = chgg;
 #pragma omp target update to (chg)
+
+
 }
 
 void DampPsi(const Grid3D<double>& G,Array4D<double>& U){
