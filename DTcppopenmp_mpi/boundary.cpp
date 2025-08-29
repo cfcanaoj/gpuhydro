@@ -13,20 +13,18 @@
 #include <mpi.h>
 #include <omp.h>
 
-#include "hydro_arrays.hpp"
 #include "resolution.hpp"
 #include "hydro.hpp"
+#include "boundary.hpp"
+
 #include "mpi_config.hpp"
 
-using namespace hydro_arrays_mod;
+using namespace hydflux_mod;
 
 namespace boundary_mod {
 #pragma omp declare target
   BoundaryArray<double> Bs,Br;
 #pragma omp end declare target 
-};
-
-using namespace hydflux_mod;
 
 auto assocb = [&](void* host_ptr, size_t bytes, int dev) {
     void* dptr = omp_get_mapped_ptr(host_ptr, dev);
@@ -41,7 +39,6 @@ auto assocb = [&](void* host_ptr, size_t bytes, int dev) {
 
 void AllocateBoundaryVariables(BoundaryArray<double>& Bs,BoundaryArray<double>& Br){
   using namespace resolution_mod;
-  using namespace hydflux_mod;
 
   int dev = omp_get_default_device();
   
@@ -130,7 +127,7 @@ void AllocateBoundaryVariables(BoundaryArray<double>& Bs,BoundaryArray<double>& 
 #pragma omp target update to (Br.Zs_data[0:Br.size3],Br.Ze_data[0:Br.size3])
 
 
-}
+};
 
 
 void DeallocateBoundaryVariables(BoundaryArray<double>& Bs,BoundaryArray<double>& Br){
@@ -238,7 +235,7 @@ void SendRecvBoundary(const BoundaryArray<double>& Bs,BoundaryArray<double>& Br)
 
     if(nreq != 0) MPI_Waitall ( nreq, req, MPI_STATUSES_IGNORE);
     nreq = 0;	
-}
+};
 
 
 void SetBoundaryCondition(FieldArray<double>& P,BoundaryArray<double>& Bs,BoundaryArray<double>& Br) {
@@ -331,3 +328,5 @@ void SetBoundaryCondition(FieldArray<double>& P,BoundaryArray<double>& Bs,Bounda
 	  //P.data[((n*ktot+ke+1  +k)*jtot+j)*itot+i] = Ze.data[((n*ngh+k)*jtot+j)*itot+i];
   }
 };
+
+};// end namespace

@@ -12,22 +12,17 @@
 #include <algorithm>
 #include <chrono>
 
-#include "hydro_arrays.hpp"
 #include "resolution.hpp"
 #include "hydro.hpp"
 #include "boundary.hpp"
 
 #include "main.hpp"
-
 #include "mpi_config.hpp"
-
 #include "mpi_dataio.hpp"
 
-using namespace hydro_arrays_mod;
 
-static void GenerateGrid(GridArray<double>& G) {
+static void GenerateGrid(hydflux_mod::GridArray<double>& G) {
   using namespace resolution_mod;
-  using namespace hydflux_mod;
   using namespace mpi_config_mod;
   
   double x1minloc,x1maxloc;
@@ -72,7 +67,7 @@ static void GenerateGrid(GridArray<double>& G) {
 
   
 }
-static void GenerateProblem(GridArray<double>& G,FieldArray<double>& P,FieldArray<double>& U) {
+static void GenerateProblem(hydflux_mod::GridArray<double>& G,hydflux_mod::FieldArray<double>& P,hydflux_mod::FieldArray<double>& U) {
   using namespace resolution_mod;
   using namespace hydflux_mod;
 
@@ -146,7 +141,7 @@ static void GenerateProblem(GridArray<double>& G,FieldArray<double>& P,FieldArra
 
 }
 
-static void GenerateProblem2(GridArray<double>& G,FieldArray<double>& P,FieldArray<double>& U) {
+static void GenerateProblem2(hydflux_mod::GridArray<double>& G,hydflux_mod::FieldArray<double>& P,hydflux_mod::FieldArray<double>& U) {
   using namespace resolution_mod;
   using namespace hydflux_mod;
 
@@ -304,7 +299,8 @@ void Output(bool& forcedamp){
   
   if(!forcedamp && time_sim < time_out + dtout) return;
   
-
+  if(myid_w==0) printf("output index=%i, time=%e \n",index,time_sim);
+  
 #pragma omp target update from (P.data[0:P.size])
   
   if (! is_inited){

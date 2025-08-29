@@ -10,13 +10,11 @@
 #include <algorithm>
 #include <omp.h>
 
-#include "hydro_arrays.hpp"
 #include "resolution.hpp"
 #include "hydro.hpp"
 
 #include "mpi_config.hpp"
 
-using namespace hydro_arrays_mod;
 using namespace resolution_mod;
 
 namespace hydflux_mod {
@@ -28,9 +26,6 @@ namespace hydflux_mod {
   double csiso;
   double chg;
 #pragma omp end declare target
-};
-
-using namespace hydflux_mod;
 
 auto assoc = [&](void* host_ptr, size_t bytes, int dev) {
     void* dptr = omp_get_mapped_ptr(host_ptr, dev);
@@ -1084,3 +1079,4 @@ void DampPsi(const GridArray<double>& G,FieldArray<double>& U){
 }
 
 
+}; // end of namespace
