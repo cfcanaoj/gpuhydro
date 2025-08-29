@@ -30,8 +30,8 @@ coptdebug := -g -traceback
 
 OBJS = main.o hydro.o boundary.o mpi_routines.o
 
-mpi_routines.o : mpi_routines.cpp
-hydro.o: hydro.cpp hydro.hpp mpi_routines.o
+mpi_routines.o : mpi_routines.cpp mpi_routines.hpp
+hydro.o: hydro.cpp hydro.hpp hydro_arrays.hpp resolution.hpp mpi_routines.o
 boundary.o: boundary.cpp boundary.hpp mpi_routines.o
 main.o: main.cpp hydro.o boundary.o mpi_routines.o
 

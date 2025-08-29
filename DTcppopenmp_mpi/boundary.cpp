@@ -28,9 +28,23 @@ namespace boundary_mod {
 
 using namespace hydflux_mod;
 
+auto assocb = [&](void* host_ptr, size_t bytes, int dev) {
+    void* dptr = omp_get_mapped_ptr(host_ptr, dev);
+    if (!dptr) {
+        std::fprintf(stderr, "mapped_ptr is NULL for %p\n", host_ptr);
+    }
+    int r = omp_target_associate_ptr(host_ptr, dptr, bytes, /*device_offset=*/0, dev);
+    if (r != 0) {
+        std::fprintf(stderr, "omp_target_associate_ptr failed (%d)\n", r);
+    }
+};
+
 void AllocateBoundaryVariables(Boundary3D<double>& Bs,Boundary3D<double>& Br){
   using namespace resolution_mod;
   using namespace hydflux_mod;
+
+  int dev = omp_get_default_device();
+  
   // buffer for send
   Bs.allocate(nprim ,ngh,ktot,jtot,itot);
 
@@ -39,6 +53,13 @@ void AllocateBoundaryVariables(Boundary3D<double>& Bs,Boundary3D<double>& Br){
 #pragma omp target enter data map (alloc: Bs.Zs_data[0:Bs.size3], Bs.Ze_data[0: Bs.size3])
 #pragma omp target update to (Bs.n1, Bs.n2, Bs.n3, Bs.ng, Bs.nv, Bs.size1, Bs.size2, Bs.size3)
 
+  assocb(Bs.Xs_data, sizeof(double)*Bs.size1,dev);
+  assocb(Bs.Xe_data, sizeof(double)*Bs.size1,dev);
+  assocb(Bs.Ys_data, sizeof(double)*Bs.size2,dev);
+  assocb(Bs.Ye_data, sizeof(double)*Bs.size2,dev);
+  assocb(Bs.Zs_data, sizeof(double)*Bs.size3,dev);
+  assocb(Bs.Ze_data, sizeof(double)*Bs.size3,dev);
+  
   for (int n=0; n<nprim; n++)
     for (int k=0; k<ktot; k++)
       for (int j=0; j<jtot; j++)
@@ -74,6 +95,13 @@ void AllocateBoundaryVariables(Boundary3D<double>& Bs,Boundary3D<double>& Br){
 #pragma omp target enter data map (alloc: Br.Zs_data[0:Br.size3], Br.Ze_data[0: Br.size3])
 #pragma omp target update to (Br.n1, Br.n2, Br.n3, Br.ng, Br.nv, Br.size1, Br.size2, Br.size3)
 
+  assocb(Br.Xs_data, sizeof(double)*Br.size1,dev);
+  assocb(Br.Xe_data, sizeof(double)*Br.size1,dev);
+  assocb(Br.Ys_data, sizeof(double)*Br.size2,dev);
+  assocb(Br.Ye_data, sizeof(double)*Br.size2,dev);
+  assocb(Br.Zs_data, sizeof(double)*Br.size3,dev);
+  assocb(Br.Ze_data, sizeof(double)*Br.size3,dev);
+  
   for (int n=0; n<nprim; n++)
     for (int k=0; k<ktot; k++)
       for (int j=0; j<jtot; j++)
@@ -97,7 +125,7 @@ void AllocateBoundaryVariables(Boundary3D<double>& Bs,Boundary3D<double>& Br){
 	  Br.Ze(n,k,j,i) = 0.0;
   }
 
-#pragma omp target update to (Br.Xs_data[0:Br.size1],Br.Xe_data[0:Bs.size1])
+#pragma omp target update to (Br.Xs_data[0:Br.size1],Br.Xe_data[0:Br.size1])
 #pragma omp target update to (Br.Ys_data[0:Br.size2],Br.Ye_data[0:Br.size2])
 #pragma omp target update to (Br.Zs_data[0:Br.size3],Br.Ze_data[0:Br.size3])
 
@@ -208,7 +236,7 @@ void SendRecvBoundary(const Boundary3D<double>& Bs,Boundary3D<double>& Br){
     rc = MPI_Isend(d_Bs_Zs,Bs.size3, MPI_DOUBLE, n3p, 3100, comm3d, &req[nreq++]);
    }
 
-    if(nreq != 0) MPI_Waitall ( nreq, req, stat);
+    if(nreq != 0) MPI_Waitall ( nreq, req, MPI_STATUSES_IGNORE);
     nreq = 0;	
 }
 
@@ -264,13 +292,15 @@ void SetBoundaryCondition(Array4D<double>& P,Boundary3D<double>& Bs,Boundary3D<d
 
   // |     |Bs.Ye   Bs.Ys|     |
   // |Br.Ys|             |Br.Ye|
-#pragma omp target update from (Bs.Ys_data[0:Bs.size2])
-  printf("bs %i %e %e \n",myid_w,Bs.Ys(nene,ks,0,is),Bs.Ys(nene,ks,1,is));  
+  //#pragma omp target update from (Bs.Ys_data[0:Bs.size2])
+  //printf("bs %i %e %e \n",myid_w,Bs.Ys(nene,ks,0,is),Bs.Ys(nene,ks,1,is));
+  //printf("bs %i %e %e \n",myid_w,Bs.Ys_data[((nene*ktot+ks)*ngh+0)*itot+is],Bs.Ys_data[((nene*ktot+ks)*ngh+1)*itot+is]);
   SendRecvBoundary(Bs,Br);
   //#pragma omp target update from (Br.Ys_data[0:Br.size2])
   //printf("bo %i %e %e \n",myid_w,Br.Ys(nene,ks,0,is),Br.Ys(nene,ks,1,is));
-#pragma omp target update from (Br.Ye_data[0:Br.size2])
-  printf("br %i %e %e \n",myid_w,Br.Ye(nene,ks,0,is),Br.Ye(nene,ks,1,is));
+  //#pragma omp target update from (Br.Ye_data[0:Br.size2])
+  //printf("br %i %e %e \n",myid_w,Br.Ye(nene,ks,0,is),Br.Ye(nene,ks,1,is));
+  //printf("br %i %e %e \n",myid_w,Br.Ye_data[((nene*ktot+ks)*ngh+0)*itot+is],Br.Ye_data[((nene*ktot+ks)*ngh+1)*itot+is]);
 
   
   // |     |Bs.Xe   Bs.Xs|     |

@@ -17,7 +17,7 @@ namespace resolution_mod {
   inline constexpr int ngrid1{128}; //! resolution for x
   inline constexpr int ngrid2{64}; //! resolution for y
   inline constexpr int ngrid3{128}; //! resolution for z
-  inline constexpr int ngh{2};  //! numeber of ghost mesh
+  inline constexpr int ngh{2};  //! number of ghost mesh
   inline constexpr int itot = ngrid1 + 2 * ngh+1; //! Like ZEUS-2D
   inline constexpr int jtot = ngrid2 + 2 * ngh+1; // 
   inline constexpr int ktot = ngrid3 + 2 * ngh+1; // 

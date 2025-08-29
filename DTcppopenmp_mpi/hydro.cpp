@@ -8,6 +8,8 @@
 #include <cmath>
 #include <cstdio>
 #include <algorithm>
+#include <omp.h>
+
 #include "hydro_arrays.hpp"
 #include "resolution.hpp"
 #include "hydro.hpp"
@@ -28,7 +30,21 @@ namespace hydflux_mod {
 
 using namespace hydflux_mod;
 
+auto assoc = [&](void* host_ptr, size_t bytes, int dev) {
+    void* dptr = omp_get_mapped_ptr(host_ptr, dev);
+    if (!dptr) {
+        std::fprintf(stderr, "mapped_ptr is NULL for %p\n", host_ptr);
+    }
+    int r = omp_target_associate_ptr(host_ptr, dptr, bytes, /*device_offset=*/0, dev);
+    if (r != 0) {
+        std::fprintf(stderr, "omp_target_associate_ptr failed (%d)\n", r);
+    }
+};
+
 void AllocateHydroVariables(Grid3D<double>& G,Array4D<double>& U,Array4D<double>& Fx,Array4D<double>& Fy,Array4D<double>& Fz,Array4D<double>& P){
+  
+  int dev = omp_get_default_device();
+  
   G.allocate(ktot,jtot,itot);
   
   for (int i=0; i<itot; i++) {
@@ -48,6 +64,13 @@ void AllocateHydroVariables(Grid3D<double>& G,Array4D<double>& U,Array4D<double>
 #pragma omp target enter data map (alloc: G.x1a_data[0:G.n1],G.x1b_data[0:G.n1])
 #pragma omp target enter data map (alloc: G.x2a_data[0:G.n2],G.x2b_data[0:G.n2])
 #pragma omp target enter data map (alloc: G.x3a_data[0:G.n3],G.x3b_data[0:G.n3])
+
+  assoc(G.x1a_data, sizeof(double)*G.n1,dev);
+  assoc(G.x1b_data, sizeof(double)*G.n1,dev);
+  assoc(G.x2a_data, sizeof(double)*G.n2,dev);
+  assoc(G.x2b_data, sizeof(double)*G.n2,dev);
+  assoc(G.x3a_data, sizeof(double)*G.n3,dev);
+  assoc(G.x3b_data, sizeof(double)*G.n3,dev);
   
   U.allocate(mconsv,ktot,jtot,itot);
   P.allocate(nprim ,ktot,jtot,itot);
@@ -56,6 +79,18 @@ void AllocateHydroVariables(Grid3D<double>& G,Array4D<double>& U,Array4D<double>
   Fy.allocate(mconsv,ktot,jtot,itot);
   Fz.allocate(mconsv,ktot,jtot,itot);
 
+#pragma omp target enter data map (alloc: U.data[0: U.size])
+#pragma omp target enter data map (alloc:Fx.data[0:Fx.size])
+#pragma omp target enter data map (alloc:Fy.data[0:Fy.size])
+#pragma omp target enter data map (alloc:Fz.data[0:Fz.size])
+#pragma omp target enter data map (alloc: P.data[0: P.size])
+
+  assoc( U.data, sizeof(double)* U.size,dev);
+  assoc(Fx.data, sizeof(double)*Fx.size,dev);
+  assoc(Fy.data, sizeof(double)*Fy.size,dev);
+  assoc(Fz.data, sizeof(double)*Fz.size,dev);
+  assoc( P.data, sizeof(double)* P.size,dev);
+  
   for (int m=0; m<mconsv; m++)
     for (int k=0; k<ktot; k++)
       for (int j=0; j<jtot; j++)
@@ -72,11 +107,6 @@ void AllocateHydroVariables(Grid3D<double>& G,Array4D<double>& U,Array4D<double>
 	for (int i=0; i<itot; i++) {
 	  P(n,k,j,i) = 0.0;
   }
-#pragma omp target enter data map (alloc: U.data[0: U.size])
-#pragma omp target enter data map (alloc:Fx.data[0:Fx.size])
-#pragma omp target enter data map (alloc:Fy.data[0:Fy.size])
-#pragma omp target enter data map (alloc:Fz.data[0:Fz.size])
-#pragma omp target enter data map (alloc: P.data[0: P.size])
   
 #pragma omp target update to ( U.data[0: U.size], U.n1, U.n2, U.n3, U.nv)
 #pragma omp target update to (Fx.data[0:Fx.size],Fx.n1,Fx.n2,Fx.n3,Fx.nv)
