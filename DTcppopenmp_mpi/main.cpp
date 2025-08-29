@@ -19,15 +19,16 @@
 
 #include "main.hpp"
 
-#include "mpi_routines.hpp"
+#include "mpi_config.hpp"
 
+#include "mpi_dataio.hpp"
 
 using namespace hydro_arrays_mod;
 
-static void GenerateGrid(Grid3D<double>& G) {
+static void GenerateGrid(GridArray<double>& G) {
   using namespace resolution_mod;
   using namespace hydflux_mod;
-  using namespace mpiconfig_mod;
+  using namespace mpi_config_mod;
   
   double x1minloc,x1maxloc;
   double x2minloc,x2maxloc;
@@ -71,7 +72,7 @@ static void GenerateGrid(Grid3D<double>& G) {
 
   
 }
-static void GenerateProblem(Grid3D<double>& G,Array4D<double>& P,Array4D<double>& U) {
+static void GenerateProblem(GridArray<double>& G,FieldArray<double>& P,FieldArray<double>& U) {
   using namespace resolution_mod;
   using namespace hydflux_mod;
 
@@ -145,7 +146,7 @@ static void GenerateProblem(Grid3D<double>& G,Array4D<double>& P,Array4D<double>
 
 }
 
-static void GenerateProblem2(Grid3D<double>& G,Array4D<double>& P,Array4D<double>& U) {
+static void GenerateProblem2(GridArray<double>& G,FieldArray<double>& P,FieldArray<double>& U) {
   using namespace resolution_mod;
   using namespace hydflux_mod;
 
@@ -213,13 +214,10 @@ static void GenerateProblem2(Grid3D<double>& G,Array4D<double>& P,Array4D<double
 
 }
 
-
-
-
 void Output1D(bool& forcedamp){
   using namespace resolution_mod;
   using namespace hydflux_mod;
-  using namespace mpiconfig_mod;
+  using namespace mpi_config_mod;
   static int index = 0;  
   static bool is_inited = false;
   const int dir1=0, dir2=1, dir3=2;
@@ -294,6 +292,95 @@ void Output1D(bool& forcedamp){
   index += 1;
 }
 
+void Output(bool& forcedamp){
+  using namespace resolution_mod;
+  using namespace hydflux_mod;
+  using namespace mpi_config_mod;
+  namespace io = mpi_dataio_mod;
+  static int index = 0;
+  
+  static bool is_inited = false;
+
+  
+  if(!forcedamp && time_sim < time_out + dtout) return;
+  
+
+#pragma omp target update from (P.data[0:P.size])
+  
+  if (! is_inited){
+    std::strcpy(io::id,"DT");
+    std::strcpy(io::datadir,"./bindata/");
+    (void)system("mkdir -p bindata");
+
+    io::ntotal[dir1] = ntiles[dir1]*ngrid1;
+    io::ntotal[dir2] = ntiles[dir2]*ngrid2;
+    io::ntotal[dir3] = ntiles[dir3]*ngrid3;
+    
+    io::npart[dir1]  = ngrid1;
+    io::npart[dir2]  = ngrid2;
+    io::npart[dir3]  = ngrid3;
+    
+    io::nvars = 9;
+    io::nvarg = 2;
+    
+    io::gridXout.allocate(io::nvarg,ngrid1+1);
+    io::gridYout.allocate(io::nvarg,ngrid2+1);
+    io::gridZout.allocate(io::nvarg,ngrid3+1);
+    io::Fieldout.allocate(io::nvars,ngrid3,ngrid2,ngrid1);
+
+    for(int i=is;i<=ie+1;i++){
+      io::gridXout(0,i-is) = G.x1b(i);
+      io::gridXout(1,i-is) = G.x1a(i);
+    }
+    
+    for(int j=js;j<=je+1;j++){
+      io::gridYout(0,j-js) = G.x2b(j);
+      io::gridYout(1,j-js) = G.x2a(j);
+    }
+    for(int k=ks;k<=ke+1;k++){
+      io::gridZout(0,k-ks) = G.x3b(k);
+      io::gridZout(1,k-ks) = G.x3a(k);
+    }
+    
+    is_inited = true;
+  }
+  // ---- output text (unf%05d.dat) ----
+  char fname_unf[256];
+  std::snprintf(fname_unf, sizeof(fname_unf), "bindata/unf%05d.dat", index);
+  FILE* fp_unf = std::fopen(fname_unf, "w");
+  if (!fp_unf){
+    std::fprintf(stderr, "open failed: %s : %s\n", fname_unf, std::strerror(errno));
+  }
+  
+  std::fprintf(fp_unf, "# %.17g %.17g\n", time_sim,dt);
+  std::fprintf(fp_unf, "# %d \n", ngrid1);
+  std::fprintf(fp_unf, "# %d \n", ngrid2);
+  std::fprintf(fp_unf, "# %d \n", ngrid3);
+  std::fclose(fp_unf);
+  
+  // ---- output data (bin%05d.dat) ----
+
+  for (int k=ks;k<=ke;k++)
+    for (int j=js;j<=je;j++)
+      for (int i=is;i<=ie;i++){
+	io::Fieldout(0,k-ks,j-js,i-is) = P(nden,k,j,i);
+	io::Fieldout(1,k-ks,j-js,i-is) = P(nve1,k,j,i);
+	io::Fieldout(2,k-ks,j-js,i-is) = P(nve2,k,j,i);
+	io::Fieldout(3,k-ks,j-js,i-is) = P(nve3,k,j,i);
+	io::Fieldout(4,k-ks,j-js,i-is) = P(nbm1,k,j,i);
+	io::Fieldout(5,k-ks,j-js,i-is) = P(nbm2,k,j,i);
+	io::Fieldout(6,k-ks,j-js,i-is) = P(nbm3,k,j,i);
+	io::Fieldout(7,k-ks,j-js,i-is) = P(nbps,k,j,i);
+	io::Fieldout(8,k-ks,j-js,i-is) = P(npre,k,j,i); 
+  }
+  
+  io::MPIOutputBindary(index);
+  index += 1;
+}
+
+
+
+
 
 
 int main() {
@@ -301,10 +388,16 @@ int main() {
   using namespace resolution_mod;
   using namespace hydflux_mod;
   using namespace boundary_mod;
-  using namespace mpiconfig_mod;
+  using namespace mpi_config_mod;
   const bool NoOutput = false;
   static bool is_final = false;
 
+  periodic[dir1] = 1;
+  periodic[dir2] = 1;
+  periodic[dir3] = 1;
+  ntiles[dir1]   = 1;
+  ntiles[dir2]   = 2;
+  ntiles[dir3]   = 1;
   InitializeMPI();
   
   if(myid_w == 0) printf("setup grids and fields\n");

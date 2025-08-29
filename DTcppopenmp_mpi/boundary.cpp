@@ -16,13 +16,13 @@
 #include "hydro_arrays.hpp"
 #include "resolution.hpp"
 #include "hydro.hpp"
-#include "mpi_routines.hpp"
+#include "mpi_config.hpp"
 
 using namespace hydro_arrays_mod;
 
 namespace boundary_mod {
 #pragma omp declare target
-  Boundary3D<double> Bs,Br;
+  BoundaryArray<double> Bs,Br;
 #pragma omp end declare target 
 };
 
@@ -39,7 +39,7 @@ auto assocb = [&](void* host_ptr, size_t bytes, int dev) {
     }
 };
 
-void AllocateBoundaryVariables(Boundary3D<double>& Bs,Boundary3D<double>& Br){
+void AllocateBoundaryVariables(BoundaryArray<double>& Bs,BoundaryArray<double>& Br){
   using namespace resolution_mod;
   using namespace hydflux_mod;
 
@@ -133,7 +133,7 @@ void AllocateBoundaryVariables(Boundary3D<double>& Bs,Boundary3D<double>& Br){
 }
 
 
-void DeallocateBoundaryVariables(Boundary3D<double>& Bs,Boundary3D<double>& Br){
+void DeallocateBoundaryVariables(BoundaryArray<double>& Bs,BoundaryArray<double>& Br){
   using namespace resolution_mod;
   using namespace hydflux_mod;
 
@@ -148,8 +148,8 @@ void DeallocateBoundaryVariables(Boundary3D<double>& Bs,Boundary3D<double>& Br){
 }
 
 
-void SendRecvBoundary(const Boundary3D<double>& Bs,Boundary3D<double>& Br){
-  using namespace mpiconfig_mod;
+void SendRecvBoundary(const BoundaryArray<double>& Bs,BoundaryArray<double>& Br){
+  using namespace mpi_config_mod;
   using namespace resolution_mod;
   int dev = omp_get_default_device();
   //printf("myid gpuid=%i %i",myid_w,dev);
@@ -241,11 +241,11 @@ void SendRecvBoundary(const Boundary3D<double>& Bs,Boundary3D<double>& Br){
 }
 
 
-void SetBoundaryCondition(Array4D<double>& P,Boundary3D<double>& Bs,Boundary3D<double>& Br) {
+void SetBoundaryCondition(FieldArray<double>& P,BoundaryArray<double>& Bs,BoundaryArray<double>& Br) {
   using namespace resolution_mod;
   using namespace hydflux_mod;
   using namespace hydflux_mod;
-  using namespace mpiconfig_mod;
+  using namespace mpi_config_mod;
 
   // x-direction
   // |     |Bs.Xe   Bs.Xs|     |

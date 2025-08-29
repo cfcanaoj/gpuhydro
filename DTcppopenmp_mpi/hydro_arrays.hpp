@@ -24,7 +24,7 @@ using index_t = int;     // 必要なら 32/64 を切り替え
 using size_t  = std::size_t;
 
 template <typename T>
-class Grid3D {
+class GridArray {
 public:
   T* x1a_data = nullptr;
   T* x1b_data = nullptr;
@@ -34,8 +34,8 @@ public:
   T* x3b_data = nullptr;
   int n3 = 0, n2 = 0, n1 = 0;
   size_t size = 0;
-  Grid3D() = default;
-  Grid3D(int n3_, int n2_, int n1_) {
+  GridArray() = default;
+  GridArray(int n3_, int n2_, int n1_) {
     allocate(n3_,n2_,n1_);
   }
   void allocate(int n3_, int n2_, int n1_) {
@@ -76,13 +76,13 @@ public:
 // 4D 配列: U(n,k,j,i) 変数×3D（SoA 的）
 //----------------------------------------------
 template <typename T>
-class Array4D {
+class FieldArray {
 public:
   T* data = nullptr;
   int nv = 0, n3 = 0, n2 = 0, n1 = 0;
   size_t size = 0;
-  Array4D() = default;
-  Array4D(int _nv, int _n3, int _n2, int _n1) {
+  FieldArray() = default;
+  FieldArray(int _nv, int _n3, int _n2, int _n1) {
     allocate(_nv,_n3,_n2,_n1);
   }
   
@@ -106,7 +106,7 @@ public:
 };
 
 template <typename T>
-class Boundary3D {
+class BoundaryArray {
 public:
   T* Xs_data = nullptr;
   T* Xe_data = nullptr;
@@ -119,8 +119,8 @@ public:
   size_t size2 = 0;
   size_t size3 = 0;
   
-  Boundary3D() = default;
-  Boundary3D(int nv_,int ng_,int n3_, int n2_, int n1_) {
+  BoundaryArray() = default;
+  BoundaryArray(int nv_,int ng_,int n3_, int n2_, int n1_) {
     allocate(nv_,ng_,n3_,n2_,n1_);
   }
   void allocate(int nv_,int ng_,int n3_, int n2_, int n1_) {

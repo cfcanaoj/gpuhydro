@@ -5,13 +5,12 @@
 
 #include <omp.h>
 
-#include "mpi_routines.hpp"
+#include "mpi_config.hpp"
 
 // =============================
 // Namespace: mpimod (definitions)
 // =============================
-namespace mpiconfig_mod {
-
+namespace mpi_config_mod {
 
   // Public state
   int ierr = 0;
@@ -23,18 +22,16 @@ namespace mpiconfig_mod {
   MPI_Comm comm3d = MPI_COMM_NULL;
   int myid = 0, nprocs = 0;
   
-  int periodic[ndim] = {1, 1, 1};   // broadcasted as MPI_INT
-  int ntiles[ndim]   = {1, 2, 1};
-  int coords[ndim]   = {0, 0, 0};
+  int periodic[3] = {0, 0, 0};   // broadcasted as MPI_INT
+  int ntiles[3]   = {0, 0, 0};
+  int coords[3]   = {0, 0, 0};
   int reorder     = 0;
   int n1m=-1, n1p=-1, n2m=-1, n2p=-1, n3m=-1, n3p=-1;
 
   int gpuid = -1, ngpus = 0;
 
   // ---- Initialize MPI world, split communicator, create 3D Cartesian topology ---
-};
 
-using namespace mpiconfig_mod;
 
 void InitializeMPI() {
   MPI_Init(nullptr, nullptr);
@@ -96,3 +93,4 @@ void MPImaxfind(const double& vin,const int& locin, double& vout, int& locout) {
     vout  = out_.v;
   locout  = out_.loc;
 }
+};

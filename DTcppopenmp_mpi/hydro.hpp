@@ -30,24 +30,24 @@ namespace hydflux_mod {
   inline constexpr int nden{0},nve1{1},nve2{2},nve3{3},nene{4},npre{5},ncsp{6},
                                nbm1{7},nbm2{8},nbm3{9},nbps{10};
 
-  extern Grid3D<double> G;
-  extern Array4D<double> P; //! P(nprim ,ktot,jtot,itot)
-  extern Array4D<double> U; //! U(mconsv,ktot,jtot,itot)
-  extern Array4D<double> Fx,Fy,Fz;
+  extern GridArray<double> G;
+  extern FieldArray<double> P; //! P(nprim ,ktot,jtot,itot)
+  extern FieldArray<double> U; //! U(mconsv,ktot,jtot,itot)
+  extern FieldArray<double> Fx,Fy,Fz;
   extern double csiso;
   extern double chg;
   
 };
 
-void AllocateHydroVariables(Grid3D<double>& G,Array4D<double>& U,Array4D<double>& Fx,Array4D<double>& Fy,Array4D<double>& Fz,Array4D<double>& P);
-void DeallocateHydroVariables(Grid3D<double> G,Array4D<double>& U, Array4D<double>& Fx,Array4D<double>& Fy,Array4D<double>& Fz,Array4D<double>& P);
-void GetNumericalFlux1(const Grid3D<double>& G,const Array4D<double>& P,Array4D<double>& Fx);
-void GetNumericalFlux2(const Grid3D<double>& G,const Array4D<double>& P,Array4D<double>& Fy);
-void GetNumericalFlux3(const Grid3D<double>& G,const Array4D<double>& P,Array4D<double>& Fz);
-void UpdateConservU(const Grid3D<double>& G,const Array4D<double>& Fx,const Array4D<double>& Fy,const Array4D<double>& Fz,Array4D<double>& U);
-void UpdatePrimitvP(const Array4D<double>& U,Array4D<double>& P);
-void ControlTimestep(const Grid3D<double>& G);
+void AllocateHydroVariables(GridArray<double>& G,FieldArray<double>& U,FieldArray<double>& Fx,FieldArray<double>& Fy,FieldArray<double>& Fz,FieldArray<double>& P);
+void DeallocateHydroVariables(GridArray<double> G,FieldArray<double>& U, FieldArray<double>& Fx,FieldArray<double>& Fy,FieldArray<double>& Fz,FieldArray<double>& P);
+void GetNumericalFlux1(const GridArray<double>& G,const FieldArray<double>& P,FieldArray<double>& Fx);
+void GetNumericalFlux2(const GridArray<double>& G,const FieldArray<double>& P,FieldArray<double>& Fy);
+void GetNumericalFlux3(const GridArray<double>& G,const FieldArray<double>& P,FieldArray<double>& Fz);
+void UpdateConservU(const GridArray<double>& G,const FieldArray<double>& Fx,const FieldArray<double>& Fy,const FieldArray<double>& Fz,FieldArray<double>& U);
+void UpdatePrimitvP(const FieldArray<double>& U,FieldArray<double>& P);
+void ControlTimestep(const GridArray<double>& G);
 void EvaluateCh();
-void DampPsi(const Grid3D<double>& G,Array4D<double>& U);
+void DampPsi(const GridArray<double>& G,FieldArray<double>& U);
 
 #endif

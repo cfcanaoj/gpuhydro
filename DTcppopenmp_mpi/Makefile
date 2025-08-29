@@ -28,12 +28,13 @@ coptdebug := -g -traceback
 .cpp.o: 
 	${cc} ${copt} ${coptgpu} ${coptdebug} -c $< 
 
-OBJS = main.o hydro.o boundary.o mpi_routines.o
+OBJS = main.o hydro.o boundary.o mpi_dataio.o mpi_config.o
 
-mpi_routines.o : mpi_routines.cpp mpi_routines.hpp
-hydro.o: hydro.cpp hydro.hpp hydro_arrays.hpp resolution.hpp mpi_routines.o
-boundary.o: boundary.cpp boundary.hpp mpi_routines.o
-main.o: main.cpp hydro.o boundary.o mpi_routines.o
+mpi_config.o : mpi_config.cpp mpi_config.hpp
+mpi_dataio.o : mpi_dataio.cpp mpi_dataio.hpp
+hydro.o: hydro.cpp hydro.hpp hydro_arrays.hpp resolution.hpp mpi_config.o
+boundary.o: boundary.cpp boundary.hpp mpi_config.o
+main.o: main.cpp hydro.o boundary.o mpi_config.o mpi_dataio.o
 
 ${exed}/${exe}: ${OBJS}
 	${cc} ${copt} ${coptgpu} ${coptdebug} ${OBJS} -o $@

@@ -14,17 +14,17 @@
 #include "resolution.hpp"
 #include "hydro.hpp"
 
-#include "mpi_routines.hpp"
+#include "mpi_config.hpp"
 
 using namespace hydro_arrays_mod;
 using namespace resolution_mod;
 
 namespace hydflux_mod {
 #pragma omp declare target
-  Grid3D<double> G;
-  Array4D<double> U; //! U(mconsv,ktot,jtot,itot)
-  Array4D<double> Fx,Fy,Fz;
-  Array4D<double> P; //! P(nprim,ktot,jtot,itot)
+  GridArray<double> G;
+  FieldArray<double> U; //! U(mconsv,ktot,jtot,itot)
+  FieldArray<double> Fx,Fy,Fz;
+  FieldArray<double> P; //! P(nprim,ktot,jtot,itot)
   double csiso;
   double chg;
 #pragma omp end declare target
@@ -43,7 +43,7 @@ auto assoc = [&](void* host_ptr, size_t bytes, int dev) {
     }
 };
 
-void AllocateHydroVariables(Grid3D<double>& G,Array4D<double>& U,Array4D<double>& Fx,Array4D<double>& Fy,Array4D<double>& Fz,Array4D<double>& P){
+void AllocateHydroVariables(GridArray<double>& G,FieldArray<double>& U,FieldArray<double>& Fx,FieldArray<double>& Fy,FieldArray<double>& Fz,FieldArray<double>& P){
   
   int dev = omp_get_default_device();
   
@@ -118,7 +118,7 @@ void AllocateHydroVariables(Grid3D<double>& G,Array4D<double>& U,Array4D<double>
 
 }
 
-void DeallocateHydroVariables(Grid3D<double>& G,Array4D<double>& U,Array4D<double>& Fx,Array4D<double>& Fy,Array4D<double>& Fz,Array4D<double>& P){
+void DeallocateHydroVariables(GridArray<double>& G,FieldArray<double>& U,FieldArray<double>& Fx,FieldArray<double>& Fy,FieldArray<double>& Fz,FieldArray<double>& P){
 
 #pragma omp target exit data map (delete: G.x1a_data[0:G.n1],G.x1b_data[0:G.n1],G.x2a_data[0:G.n2],G.x2b_data[0:G.n2],G.x3a_data[0:G.n3],G.x3b_data[0:G.n3])
 #pragma omp target exit data map (delete: U.data[0: U.size], U.n1, U.n2, U.n3, U.nv)
@@ -436,7 +436,7 @@ void HLLD(const double (&leftst)[2*mconsv+madd],const double (&rigtst)[2*mconsv+
 }
 #pragma omp end declare target
 
-void GetNumericalFlux1(const Grid3D<double>&G,const Array4D<double>& P,Array4D<double>& Fx){
+void GetNumericalFlux1(const GridArray<double>&G,const FieldArray<double>& P,FieldArray<double>& Fx){
 
 #pragma omp target teams distribute parallel for collapse(2)
     for (int k=ks; k<=ke; k++)
@@ -610,7 +610,7 @@ void GetNumericalFlux1(const Grid3D<double>&G,const Array4D<double>& P,Array4D<d
 	}// i-loop
   }// j,k-loop
 }
-void GetNumericalFlux2(const Grid3D<double>&G,const Array4D<double>& P,Array4D<double>& Fy){
+void GetNumericalFlux2(const GridArray<double>&G,const FieldArray<double>& P,FieldArray<double>& Fy){
   /* | Pleftc1   | Pleftc2 | Prigtc1   | Prigtc2   |              */
   /*                     You are here                             */
     
@@ -785,7 +785,7 @@ void GetNumericalFlux2(const Grid3D<double>&G,const Array4D<double>& P,Array4D<d
   }// k,i-loop
 }
 
-void GetNumericalFlux3(const Grid3D<double>&G,const Array4D<double>& P,Array4D<double>& Fz){
+void GetNumericalFlux3(const GridArray<double>&G,const FieldArray<double>& P,FieldArray<double>& Fz){
   
 #pragma omp target teams distribute parallel for collapse(2)
   for (int j=js; j<=je; ++j)
@@ -960,7 +960,7 @@ void GetNumericalFlux3(const Grid3D<double>&G,const Array4D<double>& P,Array4D<d
 
 }
 
-void UpdateConservU(const Grid3D<double>& G,const Array4D<double>& Fx,const Array4D<double>& Fy,const Array4D<double>& Fz,Array4D<double>& U){
+void UpdateConservU(const GridArray<double>& G,const FieldArray<double>& Fx,const FieldArray<double>& Fy,const FieldArray<double>& Fz,FieldArray<double>& U){
 
   //printf("pre  U:%e %e %e %e\n", U(mden,ks,js,is), U(mrv3,ks,js,is), U(mbm3,ks,js,is), U(meto,ks,js,is));
   //printf("pre Fx:%e %e %e %e\n",Fx(mden,ks,js,is),Fx(mrv3,ks,js,is),Fx(mbm3,ks,js,is),Fx(meto,ks,js,is));
@@ -980,7 +980,7 @@ void UpdateConservU(const Grid3D<double>& G,const Array4D<double>& Fx,const Arra
 }
 
 
-void UpdatePrimitvP(const Array4D<double>& U,Array4D<double>& P){
+void UpdatePrimitvP(const FieldArray<double>& U,FieldArray<double>& P){
 
   //printf("U:et b1 b2 b3=%e %e %e %e\n",U(meto,ks,js,is),U(mbm1,ks,js,is),U(mbm2,ks,js,is),U(mbm3,ks,js,is));
 #pragma omp target teams distribute parallel for collapse(3)
@@ -1008,8 +1008,8 @@ void UpdatePrimitvP(const Array4D<double>& U,Array4D<double>& P){
       }
 }
 
-void ControlTimestep(const Grid3D<double>& G){
-  using namespace mpiconfig_mod;
+void ControlTimestep(const GridArray<double>& G){
+  using namespace mpi_config_mod;
   const double huge = 1.0e90;
   double dtminl = huge;
 #pragma omp target teams distribute parallel for reduction(min:dtminl) collapse(3)
@@ -1041,7 +1041,7 @@ void ControlTimestep(const Grid3D<double>& G){
 }
 
 void EvaluateCh(){
-  using namespace mpiconfig_mod;
+  using namespace mpi_config_mod;
   double chgloc = 0.0e0;
 #pragma omp target teams distribute parallel for collapse(3) reduction(max:chgloc)
   for (int k=ks; k<=ke; k++)
@@ -1071,7 +1071,7 @@ void EvaluateCh(){
 
 }
 
-void DampPsi(const Grid3D<double>& G,Array4D<double>& U){
+void DampPsi(const GridArray<double>& G,FieldArray<double>& U){
   const double alphabp = 0.1e0;
 #pragma omp target teams distribute parallel for collapse(3)
   for (int k=ks; k<=ke; k++)
