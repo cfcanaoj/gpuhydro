@@ -20,15 +20,15 @@ To foster GPU computing, we show sample codes of hydrodynamic simulations in thi
 The code for GPU computaiton is prepared in [KHf90openacc](KHf90openacc). To compare the performance with its CPU version, we have also prepared  openmp version in [KHf90openmp](KHf90openmp).
 
 ### 3D magneto-hydrodynamic deacaying turbulence
-The code for GPU computaiton is prepared in [DTf90openacc](DTf90openacc).
+The code for GPU computaiton is prepared in [DTf90openacc](DTf90openacc). MPI is available in [DTf90openacc_acc](DTf90openacc_acc). 
 
 ## C++ with OpenMP
 
 ### 3D upwind advection
-The code for GPU computaiton is prepared in [ADcppopenmp](ADcppopenmp).
+The code for GPU computaiton is prepared in [ADcppopenmp](ADcppopenmp) and  [ADcppopenacc](ADcppopenacc).
 
 ### 3D magneto-hydrodynamic deacaying turbulence
-The code for GPU computaiton is prepared in [DTcppopenmp](DTcppopenmp).
+The code for GPU computaiton is prepared in [DTcppopenmp](DTcppopenmp). MPI is available in [DTcppopenmp_mpi](DTcppopenmp_mpi).
 
 # Link
 - [CfCA GPU Cluster](https://www.cfca.nao.ac.jp/gpgpu)
